@@ -240,3 +240,14 @@ define Device/ubnt_unifi-6-lr-ubootmod
   ARTIFACT/bl31-uboot.fip := bl31-uboot ubnt_unifi-6-lr
 endef
 TARGET_DEVICES += ubnt_unifi-6-lr-ubootmod
+
+define Device/xiaomi_redmi-router-ax6s
+  DEVICE_VENDOR := Xiaomi
+  DEVICE_MODEL := Redmi Router AX6S
+  DEVICE_ALT0_VENDOR := Xiaomi
+  DEVICE_ALT0_MODEL := Router AX3200
+  DEVICE_DTS := mt7622-xiaomi-redmi-router-ax6s
+  DEVICE_DTS_DIR := ../dts
+  DEVICE_PACKAGES := kmod-mt7915e
+endef
+TARGET_DEVICES += xiaomi_redmi-router-ax6s
