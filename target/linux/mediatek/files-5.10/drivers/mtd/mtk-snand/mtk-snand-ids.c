@@ -132,7 +132,7 @@ static const struct snand_flash_info snand_flash_ids[] = {
 		   &snand_cap_read_from_cache_quad_q2d,
 		   &snand_cap_program_load_x4),
 	SNAND_INFO("GD5F1GQ5xExxG", SNAND_ID(SNAND_ID_DYMMY, 0xc8, 0x51),
-		   SNAND_MEMORG_1G_2K_64,
+		   SNAND_MEMORG_1G_2K_128,
 		   &snand_cap_read_from_cache_quad_q2d,
 		   &snand_cap_program_load_x4),
 	SNAND_INFO("GD5F2GQ5UExxG", SNAND_ID(SNAND_ID_DYMMY, 0xc8, 0x52),
