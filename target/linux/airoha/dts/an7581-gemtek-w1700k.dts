@@ -306,12 +306,16 @@
 	mdio {
 		phy5: ethernet-phy@5 {
 			compatible = "ethernet-phy-ieee802.3-c45";
+			realtek,pnswap-rx;
+			realtek,pnswap-tx;
 			reg = <5>;
 			reset-gpios = <&en7581_pinctrl 46 GPIO_ACTIVE_LOW>;
 		};
 
 		phy8: ethernet-phy@8 {
 			compatible = "ethernet-phy-ieee802.3-c45";
+			realtek,pnswap-rx;
+			realtek,pnswap-tx;
 			reg = <8>;
 			reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
 		};
