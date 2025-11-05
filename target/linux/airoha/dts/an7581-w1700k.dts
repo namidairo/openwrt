@@ -157,7 +157,7 @@
 		};
 
 		partition@200000 {
-			label = "uenv";
+			label = "u-boot-env";
 			reg = <0x00200000 0x00200000>;
 		};
 
