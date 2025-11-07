@@ -1,0 +1,48 @@
+Index: linux-6.12.57/drivers/clk/clk-en7523.c
+===================================================================
+--- linux-6.12.57.orig/drivers/clk/clk-en7523.c
++++ linux-6.12.57/drivers/clk/clk-en7523.c
+@@ -1009,11 +1009,10 @@ static int en7581_pci_enable(struct clk_
+ 	struct regmap *map = cg->map;
+ 	u32 mask;
+ 
+-	mask = REG_PCI_CONTROL_REFCLK_EN0 | REG_PCI_CONTROL_REFCLK_EN1 |
+-	       REG_PCI_CONTROL_PERSTOUT1 | REG_PCI_CONTROL_PERSTOUT2 |
++	mask = REG_PCI_CONTROL_PERSTOUT1 | REG_PCI_CONTROL_PERSTOUT2 |
+ 	       REG_PCI_CONTROL_PERSTOUT;
+ 	regmap_set_bits(map, REG_PCI_CONTROL, mask);
+-
++	mdelay(1);
+ 	return 0;
+ }
+ 
+@@ -1023,11 +1022,10 @@ static void en7581_pci_disable(struct cl
+ 	struct regmap *map = cg->map;
+ 	u32 mask;
+ 
+-	mask = REG_PCI_CONTROL_REFCLK_EN0 | REG_PCI_CONTROL_REFCLK_EN1 |
+-	       REG_PCI_CONTROL_PERSTOUT1 | REG_PCI_CONTROL_PERSTOUT2 |
++	mask = REG_PCI_CONTROL_PERSTOUT1 | REG_PCI_CONTROL_PERSTOUT2 |
+ 	       REG_PCI_CONTROL_PERSTOUT;
+ 	regmap_clear_bits(map, REG_PCI_CONTROL, mask);
+-	usleep_range(1000, 2000);
++	mdelay(1);
+ }
+ 
+ static const struct regmap_config en7523_clk_regmap_config = {
+Index: linux-6.12.57/drivers/pci/controller/pcie-mediatek-gen3.c
+===================================================================
+--- linux-6.12.57.orig/drivers/pci/controller/pcie-mediatek-gen3.c
++++ linux-6.12.57/drivers/pci/controller/pcie-mediatek-gen3.c
+@@ -979,6 +979,11 @@ static int mtk_pcie_en7581_power_up(stru
+ 	      FIELD_PREP(PCIE_K_FINETUNE_MAX, 0xf);
+ 	writel_relaxed(val, pcie->base + PCIE_PIPE4_PIE8_REG);
+ 
++	/*
++	* OEM driver sleeps here after port 0/1 configuration
++	*/
++	msleep(10);
++
+ 	err = clk_bulk_prepare_enable(pcie->num_clks, pcie->clks);
+ 	if (err) {
+ 		dev_err(dev, "failed to prepare clock\n");

@@ -1,0 +1,64 @@
+From patchwork Wed Nov  5 06:28:14 2025
+From: Chen-Yu Tsai <wenst@chromium.org>
+Date: Wed,  5 Nov 2025 14:28:14 +0800
+Subject: [PATCH] PCI: mediatek-gen3: Ignore link up timeout
+
+As mentioned in commit 886a9c134755 ("PCI: dwc: Move link handling into
+common code") come up later" in the code, it is possible for link up to
+occur later:
+
+  Let's standardize this to succeed as there are usecases where devices
+  (and the link) appear later even without hotplug. For example, a
+  reconfigured FPGA device.
+
+Another case for this is the new PCIe power control stuff. The power
+control mechanism only gets triggered in the PCI core after the driver
+calls into pci_host_probe(). The power control framework then triggers
+a bus rescan. In most driver implementations, this sequence happens
+after link training. If the driver errors out when link training times
+out, it will never get to the point where the device gets turned on.
+
+Ignore the link up timeout, and lower the error message down to a
+warning.
+
+This makes PCIe devices that have not-always-on power rails work.
+However there may be some reversal of PCIe power sequencing, since now
+the PERST# and clocks are enabled in the driver, while the power is
+applied afterwards.
+
+Signed-off-by: Chen-Yu Tsai <wenst@chromium.org>
+Reviewed-by: AngeloGioacchino Del Regno <angelogioacchino.delregno@collabora.com>
+---
+The change works to get my PCIe WiFi device working, but I wonder if
+the driver should expose more fine grained controls for the link clock
+and PERST# (when it is owned by the controller and not just a GPIO) to
+the power control framework. This applies not just to this driver.
+
+The PCI standard says that PERST# should hold the device in reset until
+the power rails are valid or stable, i.e. at their designated voltages.
+---
+ drivers/pci/controller/pcie-mediatek-gen3.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+--- linux-6.12.55.orig/drivers/pci/controller/pcie-mediatek-gen3.c
++++ linux-6.12.55/drivers/pci/controller/pcie-mediatek-gen3.c
+@@ -455,10 +455,15 @@ static int mtk_pcie_startup_port(struct
+ 		ltssm_index = PCIE_LTSSM_STATE(val);
+ 		ltssm_state = ltssm_index >= ARRAY_SIZE(ltssm_str) ?
+ 			      "Unknown state" : ltssm_str[ltssm_index];
+-		dev_err(pcie->dev,
+-			"PCIe link down, current LTSSM state: %s (%#x)\n",
+-			ltssm_state, val);
+-		return err;
++		dev_warn(pcie->dev,
++			 "PCIe link down, current LTSSM state: %s (%#x)\n",
++			 ltssm_state, val);
++
++		/*
++		 * Ignore the timeout, as the link may come up later,
++		 * such as when the PCI power control enables power to the
++		 * device, at which point it triggers a rescan.
++		 */
+ 	}
+ 
+ 	mtk_pcie_enable_msi(pcie);
