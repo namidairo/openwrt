@@ -1,0 +1,32 @@
+From 71539f3ef8a5a98971d762869bc82ad9a573ebba Mon Sep 17 00:00:00 2001
+Message-ID: <71539f3ef8a5a98971d762869bc82ad9a573ebba.1762612978.git.lorenzo@kernel.org>
+In-Reply-To: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+References: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Fri, 24 Oct 2025 23:42:21 +0200
+Subject: [PATCH 03/12] mt76: mt7996: Fix wdma_idx for MT7996 device if npu is
+ enabled
+
+Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
+---
+ mt7996/main.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/mt7996/main.c b/mt7996/main.c
+index 7b21d9da..2b798dd5 100644
+--- a/mt7996/main.c
++++ b/mt7996/main.c
+@@ -2192,6 +2192,10 @@ mt7996_net_fill_forward_path(struct ieee80211_hw *hw,
+ 		path->mtk_wdma.wdma_idx = wed->wdma_idx;
+ 	else
+ #endif
++	if (is_mt7996(&dev->mt76) && mt76_npu_device_active(&dev->mt76) &&
++	    msta_link->wcid.phy_idx == MT_BAND2)
++		path->mtk_wdma.wdma_idx = 1;
++	else
+ 		path->mtk_wdma.wdma_idx = link->mt76.band_idx;
+ 	path->mtk_wdma.bss = link->mt76.idx;
+ 	path->mtk_wdma.queue = 0;
+-- 
+2.51.1
+
