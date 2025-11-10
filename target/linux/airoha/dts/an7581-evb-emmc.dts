@@ -166,6 +166,16 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie0_rst_pins>;
 	status = "okay";
+
+	pcie@0,0 {
+		reg = <0x0000 0 0 0 0>;
+		wifi@0,0 {
+			compatible = "mediatek,mt76";
+			reg = <0x0000 0 0 0 0>;
+			airoha,npu = <&npu>;
+			airoha,eth = <&eth>;
+		};
+	};
 };
 
 &pcie1 {
@@ -214,19 +224,16 @@
 	};
 };
 
+&npu {
+	status = "okay";
+};
+
 &eth {
 	status = "okay";
 };
 
 &gdm1 {
 	status = "okay";
-};
-
-&gdm4 {
-	status = "okay";
-
-	phy-handle = <&as21xx_1>;
-	phy-mode = "usxgmii";
 };
 
 &switch {
