@@ -1,0 +1,22 @@
+Index: linux-6.12.57/drivers/net/ethernet/airoha/airoha_npu.c
+===================================================================
+--- linux-6.12.57.orig/drivers/net/ethernet/airoha/airoha_npu.c
++++ linux-6.12.57/drivers/net/ethernet/airoha/airoha_npu.c
+@@ -740,6 +740,8 @@ static int airoha_npu_probe(struct platf
+ 	if (err)
+ 		return dev_err_probe(dev, err, "failed to run npu firmware\n");
+ 
++	dev_info(dev, "NPU firmware load success");
++
+ 	regmap_write(npu->regmap, REG_CR_NPU_MIB(10),
+ 		     rmem->base + NPU_EN7581_FIRMWARE_RV32_MAX_SIZE);
+ 	regmap_write(npu->regmap, REG_CR_NPU_MIB(11), 0x40000); /* SRAM 256K */
+@@ -757,6 +759,8 @@ static int airoha_npu_probe(struct platf
+ 	regmap_write(npu->regmap, REG_CR_BOOT_TRIGGER, 0x1);
+ 	msleep(100);
+ 
++	dev_info(dev, "Booting NPU cores");
++
+ 	platform_set_drvdata(pdev, npu);
+ 
+ 	return 0;
