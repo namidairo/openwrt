@@ -1,0 +1,87 @@
+From b72e5f81be1c830c5bfb220c5116eb53a9990b5d Mon Sep 17 00:00:00 2001
+Message-ID: <b72e5f81be1c830c5bfb220c5116eb53a9990b5d.1763760621.git.lorenzo@kernel.org>
+In-Reply-To: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
+References: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Fri, 7 Nov 2025 17:44:40 +0100
+Subject: [PATCH net-next 3/4] net: airoha: Introduce airoha_qdma_init_rx_pp
+ routine
+
+This is a preliminary patch to enable LRO support for airoha_eth driver.
+
+Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 37 +++++++++++++++---------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/ethernet/airoha/airoha_eth.c b/drivers/net/ethernet/airoha/airoha_eth.c
+index 13954780f630..814d7cdb086d 100644
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -734,8 +734,7 @@ static int airoha_qdma_rx_napi_poll(struct napi_struct *napi, int budget)
+ 	return done;
+ }
+ 
+-static int airoha_qdma_init_rx_queue(struct airoha_queue *q,
+-				     struct airoha_qdma *qdma, int ndesc)
++static int airoha_qdma_init_rx_pp(struct airoha_queue *q)
+ {
+ 	const struct page_pool_params pp_params = {
+ 		.order = 0,
+@@ -744,30 +743,42 @@ static int airoha_qdma_init_rx_queue(struct airoha_queue *q,
+ 		.dma_dir = DMA_FROM_DEVICE,
+ 		.max_len = PAGE_SIZE,
+ 		.nid = NUMA_NO_NODE,
+-		.dev = qdma->eth->dev,
++		.dev = q->qdma->eth->dev,
+ 		.napi = &q->napi,
+ 	};
++
++	q->page_pool = page_pool_create(&pp_params);
++	if (IS_ERR(q->page_pool)) {
++		int err = PTR_ERR(q->page_pool);
++
++		q->page_pool = NULL;
++		return err;
++	}
++
++	q->buf_size = PAGE_SIZE / 2;
++
++	return 0;
++}
++
++static int airoha_qdma_init_rx_queue(struct airoha_queue *q,
++				     struct airoha_qdma *qdma, int ndesc)
++{
++	int err, qid = q - &qdma->q_rx[0], thr;
+ 	struct airoha_eth *eth = qdma->eth;
+-	int qid = q - &qdma->q_rx[0], thr;
+ 	dma_addr_t dma_addr;
+ 
+-	q->buf_size = PAGE_SIZE / 2;
+ 	q->ndesc = ndesc;
+ 	q->qdma = qdma;
+ 
++	err = airoha_qdma_init_rx_pp(q);
++	if (err)
++		return err;
++
+ 	q->entry = devm_kzalloc(eth->dev, q->ndesc * sizeof(*q->entry),
+ 				GFP_KERNEL);
+ 	if (!q->entry)
+ 		return -ENOMEM;
+ 
+-	q->page_pool = page_pool_create(&pp_params);
+-	if (IS_ERR(q->page_pool)) {
+-		int err = PTR_ERR(q->page_pool);
+-
+-		q->page_pool = NULL;
+-		return err;
+-	}
+-
+ 	q->desc = dmam_alloc_coherent(eth->dev, q->ndesc * sizeof(*q->desc),
+ 				      &dma_addr, GFP_KERNEL);
+ 	if (!q->desc)
+-- 
+2.51.1
+
