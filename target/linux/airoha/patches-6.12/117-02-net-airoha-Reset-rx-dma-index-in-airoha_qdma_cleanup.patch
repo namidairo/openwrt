@@ -1,0 +1,46 @@
+From 93f430f5074ea21e742d66b35ef1010e8bd2dee8 Mon Sep 17 00:00:00 2001
+Message-ID: <93f430f5074ea21e742d66b35ef1010e8bd2dee8.1763760621.git.lorenzo@kernel.org>
+In-Reply-To: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
+References: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Fri, 7 Nov 2025 17:42:44 +0100
+Subject: [PATCH net-next 2/4] net: airoha: Reset rx dma index in
+ airoha_qdma_cleanup_rx_queue()
+
+This is a preliminary patch to reconfigure hw rx queues
+enabling/disabling LRO support.
+
+Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
+---
+ drivers/net/ethernet/airoha/airoha_eth.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/airoha/airoha_eth.c b/drivers/net/ethernet/airoha/airoha_eth.c
+index 287555e93981..13954780f630 100644
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -794,7 +794,9 @@ static int airoha_qdma_init_rx_queue(struct airoha_queue *q,
+ 
+ static void airoha_qdma_cleanup_rx_queue(struct airoha_queue *q)
+ {
+-	struct airoha_eth *eth = q->qdma->eth;
++	struct airoha_qdma *qdma = q->qdma;
++	struct airoha_eth *eth = qdma->eth;
++	int qid = q - &qdma->q_rx[0];
+ 
+ 	while (q->queued) {
+ 		struct airoha_queue_entry *e = &q->entry[q->tail];
+@@ -806,6 +808,10 @@ static void airoha_qdma_cleanup_rx_queue(struct airoha_queue *q)
+ 		q->tail = (q->tail + 1) % q->ndesc;
+ 		q->queued--;
+ 	}
++
++	q->head = q->tail;
++	airoha_qdma_rmw(qdma, REG_RX_DMA_IDX(qid), RX_RING_DMA_IDX_MASK,
++			FIELD_PREP(RX_RING_DMA_IDX_MASK, q->tail));
+ }
+ 
+ static void airoha_qdma_rx_queue_deinit(struct airoha_queue *q)
+-- 
+2.51.1
+
