@@ -1,42 +1,20 @@
-From f6d2433fb4d9fc89d3b9c1a100b0b796c155a540 Mon Sep 17 00:00:00 2001
-Message-ID: <f6d2433fb4d9fc89d3b9c1a100b0b796c155a540.1762612978.git.lorenzo@kernel.org>
-In-Reply-To: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
-References: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+From 0b7e7bdcff3f27c7f41ab7af2509fd354bf2e268 Mon Sep 17 00:00:00 2001
+Message-ID: <0b7e7bdcff3f27c7f41ab7af2509fd354bf2e268.1764242430.git.lorenzo@kernel.org>
+In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
-Date: Sun, 26 Oct 2025 18:28:48 +0100
-Subject: [PATCH 09/12] mt76: dma: Do not kick RRO queues if NPU is not enabled
+Date: Wed, 26 Nov 2025 23:20:21 +0100
+Subject: [PATCH 13/14] mt76: mt7996: Do not schedule npu queues during reset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- dma.c        |  4 +++-
  mt76.h       | 20 ++++++++++++++++++++
  mt7996/dma.c |  6 ++++++
- 3 files changed, 29 insertions(+), 1 deletion(-)
+ mt7996/mac.c |  6 ++++++
+ 3 files changed, 32 insertions(+)
 
-diff --git a/dma.c b/dma.c
-index ba84f619..f567da48 100644
---- a/dma.c
-+++ b/dma.c
-@@ -399,6 +399,7 @@ static void
- mt76_dma_kick_queue(struct mt76_dev *dev, struct mt76_queue *q)
- {
- 	wmb();
-+
- 	if (mt76_queue_is_emi(q))
- 		*q->emi_cpu_idx = cpu_to_le16(q->head);
- 	else
-@@ -777,7 +778,8 @@ done:
- 		frames++;
- 	}
- 
--	if (frames || mt76_queue_is_wed_rx(q))
-+	if ((frames || mt76_queue_is_wed_rx(q)) &&
-+	    mt76_queue_should_schedule(q))
- 		mt76_dma_kick_queue(dev, q);
- 
- 	return frames;
 diff --git a/mt76.h b/mt76.h
-index c7195e13..f3ed43be 100644
+index c7195e13..f30da62a 100644
 --- a/mt76.h
 +++ b/mt76.h
 @@ -67,6 +67,7 @@
@@ -57,7 +35,7 @@ index c7195e13..f3ed43be 100644
 +	       FIELD_GET(MT_QFLAG_WED_TYPE, q->flags) == MT76_WED_Q_TXFREE;
 +}
 +
-+static inline bool mt76_queue_should_schedule(struct mt76_queue *q)
++static inline bool mt76_npu_queue_should_schedule(struct mt76_queue *q)
 +{
 +	struct mt76_dev *dev = q->dev;
 +
@@ -74,10 +52,10 @@ index c7195e13..f3ed43be 100644
  mt76_token_release(struct mt76_dev *dev, int token, bool *wake);
  int mt76_token_consume(struct mt76_dev *dev, struct mt76_txwi_cache **ptxwi);
 diff --git a/mt7996/dma.c b/mt7996/dma.c
-index 8cbca462..7834f330 100644
+index b8f9a088..1711eea0 100644
 --- a/mt7996/dma.c
 +++ b/mt7996/dma.c
-@@ -745,6 +745,9 @@ int mt7996_dma_init(struct mt7996_dev *dev)
+@@ -750,6 +750,9 @@ int mt7996_dma_init(struct mt7996_dev *dev)
  	     (is_mt7992(&dev->mt76)))) {
  		dev->mt76.q_rx[MT_RXQ_MAIN_WA].flags = MT_WED_Q_TXFREE;
  		dev->mt76.q_rx[MT_RXQ_MAIN_WA].wed = wed;
@@ -87,7 +65,7 @@ index 8cbca462..7834f330 100644
  	}
  
  	if (mt7996_has_wa(dev)) {
-@@ -759,7 +762,10 @@ int mt7996_dma_init(struct mt7996_dev *dev)
+@@ -764,7 +767,10 @@ int mt7996_dma_init(struct mt7996_dev *dev)
  		if (mtk_wed_device_active(wed)) {
  			dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].flags = MT_WED_Q_TXFREE;
  			dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].wed = wed;
@@ -98,6 +76,30 @@ index 8cbca462..7834f330 100644
  		ret = mt76_queue_alloc(dev, &dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0],
  				       MT_RXQ_ID(MT_RXQ_TXFREE_BAND0),
  				       MT7996_RX_MCU_RING_SIZE,
+diff --git a/mt7996/mac.c b/mt7996/mac.c
+index 1ce2d08a..8edf3a9b 100644
+--- a/mt7996/mac.c
++++ b/mt7996/mac.c
+@@ -2561,6 +2561,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
+ 		    mt76_queue_is_wed_rro(&dev->mt76.q_rx[i]))
+ 			continue;
+ 
++		if (!mt76_npu_queue_should_schedule(&dev->mt76.q_rx[i]))
++			continue;
++
+ 		napi_disable(&dev->mt76.napi[i]);
+ 	}
+ 	napi_disable(&dev->mt76.tx_napi);
+@@ -2616,6 +2619,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
+ 		    mt76_queue_is_wed_rro(&dev->mt76.q_rx[i]))
+ 			continue;
+ 
++		if (!mt76_npu_queue_should_schedule(&dev->mt76.q_rx[i]))
++			continue;
++
+ 		napi_enable(&dev->mt76.napi[i]);
+ 		local_bh_disable();
+ 		napi_schedule(&dev->mt76.napi[i]);
 -- 
-2.51.1
+2.52.0
 

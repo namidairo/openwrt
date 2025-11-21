@@ -1,19 +1,19 @@
-From fb5e6dee57c1dd46f553bab2389919b1c5326c92 Mon Sep 17 00:00:00 2001
-Message-ID: <fb5e6dee57c1dd46f553bab2389919b1c5326c92.1762612978.git.lorenzo@kernel.org>
-In-Reply-To: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
-References: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+From 27ed50417f8f4a089622804a0594f46f8ec03384 Mon Sep 17 00:00:00 2001
+Message-ID: <27ed50417f8f4a089622804a0594f46f8ec03384.1764242430.git.lorenzo@kernel.org>
+In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 18:43:14 +0200
-Subject: [PATCH 08/12] mt76: mt7996: integrate dma configuration for npu on
+Subject: [PATCH 11/14] mt76: mt7996: integrate dma configuration for npu on
  MT7990
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- mt7996/dma.c | 120 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 78 insertions(+), 42 deletions(-)
+ mt7996/dma.c | 133 +++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 87 insertions(+), 46 deletions(-)
 
 diff --git a/mt7996/dma.c b/mt7996/dma.c
-index 274b273d..8cbca462 100644
+index 274b273d..b8f9a088 100644
 --- a/mt7996/dma.c
 +++ b/mt7996/dma.c
 @@ -128,15 +128,27 @@ static void mt7996_dma_config(struct mt7996_dev *dev)
@@ -60,7 +60,27 @@ index 274b273d..8cbca462 100644
  	irq_mask = reset ? MT_INT_MCU_CMD : irq_mask;
  
  	mt7996_irq_enable(dev, irq_mask);
-@@ -441,28 +456,32 @@ static void mt7996_dma_enable(struct mt7996_dev *dev, bool reset)
+@@ -430,39 +445,48 @@ static void mt7996_dma_enable(struct mt7996_dev *dev, bool reset)
+ 			   MT_WFDMA_HOST_CONFIG_BAND1_PCIE1 |
+ 			   MT_WFDMA_HOST_CONFIG_BAND2_PCIE1);
+ 
+-		if (is_mt7996(&dev->mt76))
+-			mt76_set(dev, MT_WFDMA_HOST_CONFIG,
+-				 MT_WFDMA_HOST_CONFIG_BAND2_PCIE1);
+-		else
++		if (is_mt7996(&dev->mt76)) {
++			if (mt76_npu_device_active(&dev->mt76))
++				mt76_set(dev, MT_WFDMA_HOST_CONFIG,
++					 MT_WFDMA_HOST_CONFIG_BAND0_PCIE1);
++			else
++				mt76_set(dev, MT_WFDMA_HOST_CONFIG,
++					MT_WFDMA_HOST_CONFIG_BAND2_PCIE1);
++		} else {
+ 			mt76_set(dev, MT_WFDMA_HOST_CONFIG,
+ 				 MT_WFDMA_HOST_CONFIG_BAND1_PCIE1);
++		}
+ 
+ 		/* AXI read outstanding number */
  		mt76_rmw(dev, MT_WFDMA_AXI_R2A_CTRL,
  			 MT_WFDMA_AXI_R2A_CTRL_OUTSTAND_MASK, 0x14);
  
@@ -115,62 +135,62 @@ index 274b273d..8cbca462 100644
  		}
  
  		/* WFDMA rx threshold */
-@@ -497,7 +516,7 @@ static void mt7996_dma_enable(struct mt7996_dev *dev, bool reset)
+@@ -497,7 +521,7 @@ static void mt7996_dma_enable(struct mt7996_dev *dev, bool reset)
  int mt7996_dma_rro_init(struct mt7996_dev *dev)
  {
  	struct mt76_dev *mdev = &dev->mt76;
 -	u32 irq_mask;
-+	u32 irq_mask, qsize;
++	u32 irq_mask, size;
  	int ret;
  
  	if (dev->mt76.hwrro_mode == MT76_HWRRO_V3_1) {
-@@ -545,10 +564,12 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
+@@ -545,10 +569,12 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
  	if (mtk_wed_device_active(&mdev->mmio.wed) &&
  	    mtk_wed_get_rx_capa(&mdev->mmio.wed))
  		mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND0].wed = &mdev->mmio.wed;
 +
-+	qsize = is_mt7996(mdev) && mt76_npu_device_active(mdev)
-+		? MT7996_NPU_RX_RING_SIZE / 4 : MT7996_RX_RING_SIZE;
++	size = is_mt7996(mdev) && mt76_npu_device_active(mdev)
++	       ? MT7996_NPU_RX_RING_SIZE / 4 : MT7996_RX_RING_SIZE;
  	ret = mt76_queue_alloc(dev, &mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND0],
  			       MT_RXQ_ID(MT_RXQ_MSDU_PAGE_BAND0),
 -			       MT7996_RX_RING_SIZE,
 -			       MT7996_RX_MSDU_PAGE_SIZE,
-+			       qsize, MT7996_RX_MSDU_PAGE_SIZE,
++			       size, MT7996_RX_MSDU_PAGE_SIZE,
  			       MT_RXQ_RING_BASE(MT_RXQ_MSDU_PAGE_BAND0));
  	if (ret)
  		return ret;
-@@ -560,10 +581,13 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
+@@ -560,10 +586,13 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
  		if (mtk_wed_device_active(&mdev->mmio.wed) &&
  		    mtk_wed_get_rx_capa(&mdev->mmio.wed))
  			mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND1].wed = &mdev->mmio.wed;
 +
 +
-+		qsize = is_mt7996(mdev) && mt76_npu_device_active(mdev)
-+			? MT7996_NPU_RX_RING_SIZE / 2 : MT7996_RX_RING_SIZE;
++		size = is_mt7996(mdev) && mt76_npu_device_active(mdev)
++		       ? MT7996_NPU_RX_RING_SIZE / 2 : MT7996_RX_RING_SIZE;
  		ret = mt76_queue_alloc(dev, &mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND1],
  				       MT_RXQ_ID(MT_RXQ_MSDU_PAGE_BAND1),
 -				       MT7996_RX_RING_SIZE,
 -				       MT7996_RX_MSDU_PAGE_SIZE,
-+				       qsize, MT7996_RX_MSDU_PAGE_SIZE,
++				       size, MT7996_RX_MSDU_PAGE_SIZE,
  				       MT_RXQ_RING_BASE(MT_RXQ_MSDU_PAGE_BAND1));
  		if (ret)
  			return ret;
-@@ -576,10 +600,12 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
+@@ -576,10 +605,12 @@ int mt7996_dma_rro_init(struct mt7996_dev *dev)
  		if (mtk_wed_device_active(&mdev->mmio.wed) &&
  		    mtk_wed_get_rx_capa(&mdev->mmio.wed))
  			mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND2].wed = &mdev->mmio.wed;
 +
-+		qsize = is_mt7996(mdev) && mt76_npu_device_active(mdev)
-+			? MT7996_NPU_RX_RING_SIZE : MT7996_RX_RING_SIZE;
++		size = is_mt7996(mdev) && mt76_npu_device_active(mdev)
++		       ? MT7996_NPU_RX_RING_SIZE : MT7996_RX_RING_SIZE;
  		ret = mt76_queue_alloc(dev, &mdev->q_rx[MT_RXQ_MSDU_PAGE_BAND2],
  				       MT_RXQ_ID(MT_RXQ_MSDU_PAGE_BAND2),
 -				       MT7996_RX_RING_SIZE,
 -				       MT7996_RX_MSDU_PAGE_SIZE,
-+				       qsize, MT7996_RX_MSDU_PAGE_SIZE,
++				       size, MT7996_RX_MSDU_PAGE_SIZE,
  				       MT_RXQ_RING_BASE(MT_RXQ_MSDU_PAGE_BAND2));
  		if (ret)
  			return ret;
-@@ -642,11 +668,16 @@ int mt7996_dma_init(struct mt7996_dev *dev)
+@@ -642,11 +673,16 @@ int mt7996_dma_init(struct mt7996_dev *dev)
  	mt7996_dma_disable(dev, true);
  
  	/* init tx queue */
@@ -192,11 +212,11 @@ index 274b273d..8cbca462 100644
  	if (ret)
  		return ret;
  
-@@ -859,16 +890,21 @@ int mt7996_dma_init(struct mt7996_dev *dev)
+@@ -859,16 +895,21 @@ int mt7996_dma_init(struct mt7996_dev *dev)
  		}
  
  		if (mt7996_band_valid(dev, MT_BAND2)) {
-+			u32 qsize;
++			u32 size;
 +
  			/* rx rro data queue for band2 */
  			dev->mt76.q_rx[MT_RXQ_RRO_BAND2].flags =
@@ -205,17 +225,17 @@ index 274b273d..8cbca462 100644
  			    mtk_wed_get_rx_capa(wed))
  				dev->mt76.q_rx[MT_RXQ_RRO_BAND2].wed = wed;
 +
-+			qsize = is_mt7996(&dev->mt76) &&
-+				mt76_npu_device_active(&dev->mt76)
-+				? MT7996_NPU_RX_RING_SIZE : MT7996_RX_RING_SIZE;
++			size = is_mt7996(&dev->mt76) &&
++			       mt76_npu_device_active(&dev->mt76)
++			       ? MT7996_NPU_RX_RING_SIZE : MT7996_RX_RING_SIZE;
  			ret = mt76_queue_alloc(dev, &dev->mt76.q_rx[MT_RXQ_RRO_BAND2],
  					       MT_RXQ_ID(MT_RXQ_RRO_BAND2),
 -					       MT7996_RX_RING_SIZE,
 -					       MT7996_RX_BUF_SIZE,
-+					       qsize, MT7996_RX_BUF_SIZE,
++					       size, MT7996_RX_BUF_SIZE,
  					       MT_RXQ_RING_BASE(MT_RXQ_RRO_BAND2) + hif1_ofs);
  			if (ret)
  				return ret;
 -- 
-2.51.1
+2.52.0
 

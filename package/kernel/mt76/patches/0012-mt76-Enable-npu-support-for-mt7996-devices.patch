@@ -1,10 +1,10 @@
-From b5614d6419fe7a05c141fe34681eecb0b11cd4e1 Mon Sep 17 00:00:00 2001
-Message-ID: <b5614d6419fe7a05c141fe34681eecb0b11cd4e1.1762612978.git.lorenzo@kernel.org>
-In-Reply-To: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
-References: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+From cc08489231df966e47011953cc2fb1efc9d72220 Mon Sep 17 00:00:00 2001
+Message-ID: <cc08489231df966e47011953cc2fb1efc9d72220.1764242430.git.lorenzo@kernel.org>
+In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 19:17:13 +0200
-Subject: [PATCH 10/12] mt76: Enable npu support for mt7996 devices
+Subject: [PATCH 12/14] mt76: Enable npu support for mt7996 devices
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
  1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/npu.c b/npu.c
-index 48847a0b..79d388f5 100644
+index dcc6b9e2..dd954df9 100644
 --- a/npu.c
 +++ b/npu.c
 @@ -443,10 +443,6 @@ int mt76_npu_init(struct mt76_dev *dev, phys_addr_t phy_addr, int type)
@@ -32,9 +32,9 @@ index 48847a0b..79d388f5 100644
  	/* NPU offloading requires HW-RRO for RX packet reordering. */
 -	dev->hwrro_mode = MT76_HWRRO_V3_1;
 +	dev->hwrro_mode = is_mt7996(dev) ? MT76_HWRRO_V3 : MT76_HWRRO_V3_1;
+ 	dev->rx_token_size = 32768;
  
  	rcu_assign_pointer(dev->mmio.npu, npu);
- 	rcu_assign_pointer(dev->mmio.ppe_dev, ppe_dev);
 -- 
-2.51.1
+2.52.0
 

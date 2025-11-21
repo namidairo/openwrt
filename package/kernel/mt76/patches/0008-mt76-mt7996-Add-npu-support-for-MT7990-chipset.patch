@@ -1,18 +1,31 @@
-From 1610ac8f4bf6bec1fcaf70292b0390b15352fd12 Mon Sep 17 00:00:00 2001
-Message-ID: <1610ac8f4bf6bec1fcaf70292b0390b15352fd12.1762612978.git.lorenzo@kernel.org>
-In-Reply-To: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
-References: <8f2053e60d8412024b6097368748ecaf5d329599.1762612978.git.lorenzo@kernel.org>
+From de88c3ce1cab6a87fede1ef37966ae610ac1414a Mon Sep 17 00:00:00 2001
+Message-ID: <de88c3ce1cab6a87fede1ef37966ae610ac1414a.1764242430.git.lorenzo@kernel.org>
+In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 00:19:40 +0200
-Subject: [PATCH 06/12] mt76: mt7996: Add npu support for MT7990 chipset
+Subject: [PATCH 08/14] mt76: mt7996: Add npu support for MT7990 chipset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- mt7996/npu.c | 308 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 276 insertions(+), 32 deletions(-)
+ mt7996/mt7996.h |   1 +
+ mt7996/npu.c    | 308 +++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 277 insertions(+), 32 deletions(-)
 
+diff --git a/mt7996/mt7996.h b/mt7996/mt7996.h
+index 29a77d75..de31385a 100644
+--- a/mt7996/mt7996.h
++++ b/mt7996/mt7996.h
+@@ -30,6 +30,7 @@
+ #define MT7996_RX_MCU_RING_SIZE		512
+ #define MT7996_RX_MCU_RING_SIZE_WA	1024
+ #define MT7996_NPU_TX_RING_SIZE		1024
++#define MT7996_NPU_RX_RING_SIZE		1024
+ /* scatter-gather of mcu event is not supported in connac3 */
+ #define MT7996_RX_MCU_BUF_SIZE		(2048 + \
+ 					 SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index 71dc93db..788ea9ce 100644
+index 3e76bfe9..04ad2d8e 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -17,21 +17,6 @@ static int mt7992_npu_txrx_offload_init(struct mt7996_dev *dev,
@@ -268,7 +281,7 @@ index 71dc93db..788ea9ce 100644
 +		int err, band = band_list[i], phy_id;
  		dma_addr_t dma_addr;
 -		u32 val;
-+		u32 val, qsize;
++		u32 val, size;
  
 -		err = mt76_npu_get_msg(npu, i + 5,
 +		err = mt76_npu_get_msg(npu, band + 5,
@@ -287,11 +300,11 @@ index 71dc93db..788ea9ce 100644
 +					       : band;
 +		writel(val, &dev->mt76.phys[phy_id]->q_tx[0]->regs->desc_base);
 +
-+		qsize = is_mt7996(&dev->mt76)
-+			? band == MT_BAND2 ? MT7996_NPU_TX_RING_SIZE
-+			: MT7996_NPU_RX_RING_SIZE / 2
-+			: MT7996_TX_RING_SIZE;
-+		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * qsize,
++		size = is_mt7996(&dev->mt76) ? band == MT_BAND2
++					     ? MT7996_NPU_TX_RING_SIZE
++					     : MT7996_NPU_RX_RING_SIZE / 2
++					     : MT7996_TX_RING_SIZE;
++		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
  					 &dma_addr, GFP_KERNEL))
  			return -ENOMEM;
  
@@ -306,7 +319,7 @@ index 71dc93db..788ea9ce 100644
  
 -		if (!dmam_alloc_coherent(dev->mt76.dma_dev,
 -					 256 * MT7996_TX_RING_SIZE,
-+		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * qsize,
++		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
  					 &dma_addr, GFP_KERNEL))
  			return -ENOMEM;
  
@@ -425,5 +438,5 @@ index 71dc93db..788ea9ce 100644
  	if (err)
  		goto unlock;
 -- 
-2.51.1
+2.52.0
 
