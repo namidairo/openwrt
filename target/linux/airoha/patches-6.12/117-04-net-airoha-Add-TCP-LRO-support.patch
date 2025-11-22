@@ -1,10 +1,8 @@
-From 50b50e7d357aa762b09de6f6efdecaaf965667f2 Mon Sep 17 00:00:00 2001
-Message-ID: <50b50e7d357aa762b09de6f6efdecaaf965667f2.1763760621.git.lorenzo@kernel.org>
-In-Reply-To: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
-References: <ce442ad54e502de69bd349384bb2a3ca26c10516.1763760621.git.lorenzo@kernel.org>
+From 8ed3bc36c98f8589a72f62100b3294ab9689e552 Mon Sep 17 00:00:00 2001
+Message-ID: <8ed3bc36c98f8589a72f62100b3294ab9689e552.1763816822.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Tue, 10 Jun 2025 09:33:45 +0200
-Subject: [PATCH net-next 4/4] net: airoha: Add TCP LRO support
+Subject: [PATCH net-next] net: airoha: Add TCP LRO support
 
 EN7581 SoC supports TCP hw Large Receive Offload (LRO) for 8 hw queues.
 Introduce TCP LRO support to airoha_eth driver for RX queues 0-7.
@@ -13,13 +11,13 @@ When hw TCP LRO is enable, increase page_pool order to 2 for RX queues
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- drivers/net/ethernet/airoha/airoha_eth.c  | 261 ++++++++++++++++++++--
+ drivers/net/ethernet/airoha/airoha_eth.c  | 275 +++++++++++++++++++++-
  drivers/net/ethernet/airoha/airoha_eth.h  |  11 +
  drivers/net/ethernet/airoha/airoha_regs.h |  22 +-
- 3 files changed, 280 insertions(+), 14 deletions(-)
+ 3 files changed, 294 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/net/ethernet/airoha/airoha_eth.c b/drivers/net/ethernet/airoha/airoha_eth.c
-index 814d7cdb086d..3844c8bfaa2e 100644
+index 814d7cdb086d..110904b215fd 100644
 --- a/drivers/net/ethernet/airoha/airoha_eth.c
 +++ b/drivers/net/ethernet/airoha/airoha_eth.c
 @@ -12,6 +12,7 @@
@@ -214,7 +212,7 @@ index 814d7cdb086d..3844c8bfaa2e 100644
  	if (err)
  		return err;
  
-@@ -1920,6 +2040,123 @@ static int airoha_get_fe_port(struct airoha_gdm_port *port)
+@@ -1920,6 +2040,137 @@ static int airoha_get_fe_port(struct airoha_gdm_port *port)
  	}
  }
  
@@ -286,15 +284,26 @@ index 814d7cdb086d..3844c8bfaa2e 100644
 +		if (!q->ndesc)
 +			continue;
 +
++		napi_disable(&q->napi);
 +		if (!airoha_qdma_is_lro_rx_queue(q, qdma))
 +			continue;
 +
-+		napi_disable(&q->napi);
 +		airoha_qdma_rx_queue_deinit(q);
 +	}
 +
 +	/* reset LRO configuration */
 +	airoha_fe_lro_disable(eth, id);
++
++	/* trigger qdma reset */
++	airoha_qdma_set(qdma, REG_QDMA_GLOBAL_CFG, GLOBAL_CFG_RESET_MASK);
++	err = read_poll_timeout(airoha_qdma_rr, val,
++				val & GLOBAL_CFG_RESET_DONE_MASK,
++				USEC_PER_MSEC, 10 * USEC_PER_MSEC, false,
++				qdma, REG_QDMA_GLOBAL_CFG);
++	if (err)
++		return err;
++
++	airoha_qdma_clear(qdma, REG_QDMA_GLOBAL_CFG, GLOBAL_CFG_RESET_MASK);
 +
 +	/* reconfigure rx queues */
 +	for (i = 0; i < ARRAY_SIZE(qdma->q_rx); i++) {
@@ -305,7 +314,7 @@ index 814d7cdb086d..3844c8bfaa2e 100644
 +			continue;
 +
 +		if (!airoha_qdma_is_lro_rx_queue(q, qdma))
-+			continue;
++			goto napi_enable;
 +
 +		err = airoha_qdma_init_rx_pp(q, features & NETIF_F_LRO);
 +		if (err)
@@ -316,21 +325,24 @@ index 814d7cdb086d..3844c8bfaa2e 100644
 +					    q->page_pool->p.pool_size,
 +					    q->buf_size);
 +		lro_queue_index++;
-+		napi_enable(&q->napi);
++napi_enable:
++		napi_enable(&qdma->q_rx[i].napi);
++		napi_schedule(&qdma->q_rx[i].napi);
 +	}
 +
-+	/* restart Tx */
-+	for (i = 0; i < ARRAY_SIZE(qdma->q_tx_irq); i++)
-+		napi_enable(&qdma->q_tx_irq[i].napi);
-+	netif_tx_start_all_queues(dev);
++	airoha_qdma_set(qdma, REG_QDMA_GLOBAL_CFG, GLOBAL_CFG_RX_DMA_EN_MASK);
 +
 +	/* restore FE GDMA channel */
 +	airoha_fe_wr(eth, REG_GDM_RXCHN_EN(port->id), gdm_rxchn_en);
 +	/* restore PPE forward to QDMA */
 +	airoha_set_gdm_port_fwd_cfg(eth, REG_GDM_FWD_CFG(port->id), pse_port);
 +
-+	airoha_qdma_set(qdma, REG_QDMA_GLOBAL_CFG,
-+			GLOBAL_CFG_TX_DMA_EN_MASK | GLOBAL_CFG_RX_DMA_EN_MASK);
++	airoha_qdma_set(qdma, REG_QDMA_GLOBAL_CFG, GLOBAL_CFG_TX_DMA_EN_MASK);
++
++	/* restart Tx */
++	for (i = 0; i < ARRAY_SIZE(qdma->q_tx_irq); i++)
++		napi_enable(&qdma->q_tx_irq[i].napi);
++	netif_tx_start_all_queues(dev);
 +
 +	return 0;
 +}
@@ -338,7 +350,7 @@ index 814d7cdb086d..3844c8bfaa2e 100644
  static netdev_tx_t airoha_dev_xmit(struct sk_buff *skb,
  				   struct net_device *dev)
  {
-@@ -2815,6 +3052,7 @@ static const struct net_device_ops airoha_netdev_ops = {
+@@ -2815,6 +3066,7 @@ static const struct net_device_ops airoha_netdev_ops = {
  	.ndo_stop		= airoha_dev_stop,
  	.ndo_change_mtu		= airoha_dev_change_mtu,
  	.ndo_select_queue	= airoha_dev_select_queue,
@@ -346,7 +358,7 @@ index 814d7cdb086d..3844c8bfaa2e 100644
  	.ndo_start_xmit		= airoha_dev_xmit,
  	.ndo_get_stats64        = airoha_dev_get_stats64,
  	.ndo_set_mac_address	= airoha_dev_set_macaddr,
-@@ -2913,12 +3151,9 @@ static int airoha_alloc_gdm_port(struct airoha_eth *eth,
+@@ -2913,12 +3165,9 @@ static int airoha_alloc_gdm_port(struct airoha_eth *eth,
  	dev->ethtool_ops = &airoha_ethtool_ops;
  	dev->max_mtu = AIROHA_MAX_MTU;
  	dev->watchdog_timeo = 5 * HZ;
