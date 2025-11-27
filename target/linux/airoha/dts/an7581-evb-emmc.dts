@@ -236,6 +236,13 @@
 	status = "okay";
 };
 
+&gdm4 {
+	status = "okay";
+
+	phy-handle = <&as21xx_1>;
+	phy-mode = "usxgmii";
+};
+
 &switch {
 	pinctrl-names = "default";
 	pinctrl-0 = <&mdio_pins>;
