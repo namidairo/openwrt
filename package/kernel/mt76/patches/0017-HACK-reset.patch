@@ -1,0 +1,147 @@
+From 190a7d3a9d9a9e7b38853f832f1cbeeacb4aa0c6 Mon Sep 17 00:00:00 2001
+Message-ID: <190a7d3a9d9a9e7b38853f832f1cbeeacb4aa0c6.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Sat, 29 Nov 2025 14:34:18 +0100
+Subject: [PATCH 17/18] HACK: reset
+
+---
+ dma.c         |  7 +++++--
+ mt7996/mmio.c |  3 +++
+ mt7996/npu.c  | 29 ++++++++++++++++++-----------
+ 3 files changed, 26 insertions(+), 13 deletions(-)
+
+diff --git a/dma.c b/dma.c
+index fc2ac463..e8a2d478 100644
+--- a/dma.c
++++ b/dma.c
+@@ -558,7 +558,7 @@ mt76_dma_dequeue(struct mt76_dev *dev, struct mt76_queue *q, bool flush,
+ 		return NULL;
+ 
+ 	if (mt76_queue_is_wed_rro_data(q) || mt76_queue_is_wed_rro_msdu_pg(q))
+-		goto done;
++		return NULL;
+ 
+ 	if (mt76_queue_is_wed_rro_ind(q)) {
+ 		struct mt76_wed_rro_ind *cmd;
+@@ -778,7 +778,7 @@ done:
+ 		frames++;
+ 	}
+ 
+-	if (frames || mt76_queue_is_wed_rx(q))
++	if (mt76_npu_queue_should_schedule(q) && (frames || mt76_queue_is_wed_rx(q)))
+ 		mt76_dma_kick_queue(dev, q);
+ 
+ 	return frames;
+@@ -906,6 +906,9 @@ mt76_dma_rx_reset(struct mt76_dev *dev, enum mt76_rxq_id qid)
+ 			q->desc[i].ctrl = cpu_to_le32(MT_DMA_CTL_DMA_DONE);
+ 	}
+ 
++	if (mt76_queue_is_wed_rro(q))
++		q->magic_cnt = 0;
++
+ 	mt76_dma_rx_cleanup(dev, q);
+ 
+ 	/* reset WED rx queues */
+diff --git a/mt7996/mmio.c b/mt7996/mmio.c
+index d9780bb4..88d943b1 100644
+--- a/mt7996/mmio.c
++++ b/mt7996/mmio.c
+@@ -773,6 +773,9 @@ static void mt7996_irq_tasklet(struct tasklet_struct *t)
+ 	if (intr & MT_INT_TX_DONE_MCU)
+ 		napi_schedule(&dev->mt76.tx_napi);
+ 
++	if (mt76_npu_device_active(&dev->mt76))
++		intr &= (~MT_INT_RRO_RX_DONE);
++
+ 	for (i = 0; i < __MT_RXQ_MAX; i++) {
+ 		if ((intr & MT_INT_RX(i)))
+ 			napi_schedule(&dev->mt76.napi[i]);
+diff --git a/mt7996/npu.c b/mt7996/npu.c
+index 40be001b..b652a2ce 100644
+--- a/mt7996/npu.c
++++ b/mt7996/npu.c
+@@ -340,15 +340,17 @@ static int mt7996_npu_rxd_init(struct mt7996_dev *dev, struct airoha_npu *npu)
+ 
+ static int mt7996_npu_txd_init(struct mt7996_dev *dev, struct airoha_npu *npu)
+ {
++	static dma_addr_t dma_addr_list[6] = {0};
++	static int isTxdAllocated = 0;
+ 	const enum mt76_band_id band_list[] = {
+ 		MT_BAND0,
+ 		is_mt7996(&dev->mt76) ? MT_BAND2 : MT_BAND1,
+ 	};
+-	int i;
++	int i, index;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(band_list); i++) {
+ 		int err, band = band_list[i], phy_id;
+-		dma_addr_t dma_addr;
++		//dma_addr_t dma_addr;
+ 		u32 val, size;
+ 
+ 		err = mt76_npu_get_msg(npu, band + 5,
+@@ -368,45 +370,50 @@ static int mt7996_npu_txd_init(struct mt7996_dev *dev, struct airoha_npu *npu)
+ 					     ? MT7996_NPU_TX_RING_SIZE
+ 					     : MT7996_NPU_RX_RING_SIZE / 2
+ 					     : MT7996_TX_RING_SIZE;
+-		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
+-					 &dma_addr, GFP_KERNEL))
++		index = 3 * i;
++		if (!isTxdAllocated &&
++		    !dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
++					 &dma_addr_list[index], GFP_KERNEL))
+ 			return -ENOMEM;
+ 
+ 		err = mt76_npu_send_msg(npu, band,
+ 					WLAN_FUNC_SET_WAIT_TX_BUF_SPACE_HW_BASE,
+-					dma_addr, GFP_KERNEL);
++					dma_addr_list[index], GFP_KERNEL);
+ 		if (err) {
+ 			dev_warn(dev->mt76.dev,
+ 				 "failed setting NPU wlan queue buf addr\n");
+ 			return err;
+ 		}
+ 
+-		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
+-					 &dma_addr, GFP_KERNEL))
++		if (!isTxdAllocated &&
++		    !dmam_alloc_coherent(dev->mt76.dma_dev, 256 * size,
++					 &dma_addr_list[index + 1], GFP_KERNEL))
+ 			return -ENOMEM;
+ 
+ 		err = mt76_npu_send_msg(npu, band + 5,
+ 					WLAN_FUNC_SET_WAIT_TX_BUF_SPACE_HW_BASE,
+-					dma_addr, GFP_KERNEL);
++					dma_addr_list[index + 1], GFP_KERNEL);
+ 		if (err) {
+ 			dev_warn(dev->mt76.dev,
+ 				 "failed setting NPU wlan tx buf addr\n");
+ 			return err;
+ 		}
+ 
+-		if (!dmam_alloc_coherent(dev->mt76.dma_dev, 256 * 1024,
+-					 &dma_addr, GFP_KERNEL))
++		if (!isTxdAllocated &&
++		    !dmam_alloc_coherent(dev->mt76.dma_dev, 256 * 1024,
++					 &dma_addr_list[index + 2], GFP_KERNEL))
+ 			return -ENOMEM;
+ 
+ 		err = mt76_npu_send_msg(npu, band + 10,
+ 					WLAN_FUNC_SET_WAIT_TX_BUF_SPACE_HW_BASE,
+-					dma_addr, GFP_KERNEL);
++					dma_addr_list[index + 2], GFP_KERNEL);
+ 		if (err) {
+ 			dev_warn(dev->mt76.dev,
+ 				 "failed setting NPU wlan tx buf base\n");
+ 			return err;
+ 		}
+ 	}
++	isTxdAllocated = 1;
+ 
+ 	return 0;
+ }
+-- 
+2.52.0
+

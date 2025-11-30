@@ -1,21 +1,21 @@
-From a98dfffc96ff6c9f3a4b30783e647b975dc19670 Mon Sep 17 00:00:00 2001
-Message-ID: <a98dfffc96ff6c9f3a4b30783e647b975dc19670.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From 89bc6c954e88527f80d7b33efbd29fe5bdf9bf81 Mon Sep 17 00:00:00 2001
+Message-ID: <89bc6c954e88527f80d7b33efbd29fe5bdf9bf81.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 17:39:36 +0200
-Subject: [PATCH 03/14] mt76: dma: always enable RRO queues for non-MT7992
+Subject: [PATCH 03/18] mt76: dma: always enable RRO queues for non-MT7992
  chipset
 
 Intialize NPU desc_base after configuring ring_size.
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- dma.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ dma.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/dma.c b/dma.c
-index f240016e..58344825 100644
+index f240016e..fc2ac463 100644
 --- a/dma.c
 +++ b/dma.c
 @@ -6,6 +6,7 @@
@@ -26,7 +26,7 @@ index f240016e..58344825 100644
  
  static struct mt76_txwi_cache *
  mt76_alloc_txwi(struct mt76_dev *dev)
-@@ -188,8 +189,8 @@ mt76_dma_queue_magic_cnt_init(struct mt76_dev *dev, struct mt76_queue *q)
+@@ -188,16 +189,18 @@ mt76_dma_queue_magic_cnt_init(struct mt76_dev *dev, struct mt76_queue *q)
  static void
  mt76_dma_sync_idx(struct mt76_dev *dev, struct mt76_queue *q)
  {
@@ -37,9 +37,11 @@ index f240016e..58344825 100644
  		Q_WRITE(q, ring_size, MT_DMA_RRO_EN | q->ndesc);
  	else
  		Q_WRITE(q, ring_size, q->ndesc);
-@@ -198,6 +199,8 @@ mt76_dma_sync_idx(struct mt76_dev *dev, struct mt76_queue *q)
- 		writel(q->desc_dma, &q->regs->desc_base);
+ 
+ 	if (mt76_queue_is_npu_tx(q)) {
+-		writel(q->desc_dma, &q->regs->desc_base);
  		writel(q->ndesc, &q->regs->ring_size);
++		writel(q->desc_dma, &q->regs->desc_base);
  	}
 +
 +	Q_WRITE(q, desc_base, q->desc_dma);

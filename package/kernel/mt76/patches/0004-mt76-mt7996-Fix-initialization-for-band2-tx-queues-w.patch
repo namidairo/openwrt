@@ -1,10 +1,10 @@
-From 1be45e1ddec06214f3dc5ba0d4ddb64c3d31403b Mon Sep 17 00:00:00 2001
-Message-ID: <1be45e1ddec06214f3dc5ba0d4ddb64c3d31403b.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From 0d5e90c1200d801b87b79602f995feeafc2ad470 Mon Sep 17 00:00:00 2001
+Message-ID: <0d5e90c1200d801b87b79602f995feeafc2ad470.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 18:15:39 +0200
-Subject: [PATCH 04/14] mt76: mt7996: Fix initialization for band2 tx queues
+Subject: [PATCH 04/18] mt76: mt7996: Fix initialization for band2 tx queues
  when NPU is enabled
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>

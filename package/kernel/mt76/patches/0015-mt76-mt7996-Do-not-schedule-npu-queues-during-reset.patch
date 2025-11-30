@@ -1,10 +1,10 @@
-From 0b7e7bdcff3f27c7f41ab7af2509fd354bf2e268 Mon Sep 17 00:00:00 2001
-Message-ID: <0b7e7bdcff3f27c7f41ab7af2509fd354bf2e268.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From 1742e7f0f7a42aaf4ddee4309e63133342627e1a Mon Sep 17 00:00:00 2001
+Message-ID: <1742e7f0f7a42aaf4ddee4309e63133342627e1a.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Wed, 26 Nov 2025 23:20:21 +0100
-Subject: [PATCH 13/14] mt76: mt7996: Do not schedule npu queues during reset
+Subject: [PATCH 15/18] mt76: mt7996: Do not schedule npu queues during reset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
@@ -77,10 +77,10 @@ index b8f9a088..1711eea0 100644
  				       MT_RXQ_ID(MT_RXQ_TXFREE_BAND0),
  				       MT7996_RX_MCU_RING_SIZE,
 diff --git a/mt7996/mac.c b/mt7996/mac.c
-index 1ce2d08a..8edf3a9b 100644
+index 8c908b3b..b718fd7d 100644
 --- a/mt7996/mac.c
 +++ b/mt7996/mac.c
-@@ -2561,6 +2561,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
+@@ -2562,6 +2562,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
  		    mt76_queue_is_wed_rro(&dev->mt76.q_rx[i]))
  			continue;
  
@@ -90,7 +90,7 @@ index 1ce2d08a..8edf3a9b 100644
  		napi_disable(&dev->mt76.napi[i]);
  	}
  	napi_disable(&dev->mt76.tx_napi);
-@@ -2616,6 +2619,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
+@@ -2617,6 +2620,9 @@ void mt7996_mac_reset_work(struct work_struct *work)
  		    mt76_queue_is_wed_rro(&dev->mt76.q_rx[i]))
  			continue;
  

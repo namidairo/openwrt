@@ -1,10 +1,10 @@
-From de88c3ce1cab6a87fede1ef37966ae610ac1414a Mon Sep 17 00:00:00 2001
-Message-ID: <de88c3ce1cab6a87fede1ef37966ae610ac1414a.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From 30a6f4cc0f3a267d9f4d1cb2f99edae306c070d9 Mon Sep 17 00:00:00 2001
+Message-ID: <30a6f4cc0f3a267d9f4d1cb2f99edae306c070d9.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 00:19:40 +0200
-Subject: [PATCH 08/14] mt76: mt7996: Add npu support for MT7990 chipset
+Subject: [PATCH 08/18] mt76: mt7996: Add npu support for MT7990 chipset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
@@ -25,7 +25,7 @@ index 29a77d75..de31385a 100644
  #define MT7996_RX_MCU_BUF_SIZE		(2048 + \
  					 SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index 3e76bfe9..04ad2d8e 100644
+index fca1713a..ed046867 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -17,21 +17,6 @@ static int mt7992_npu_txrx_offload_init(struct mt7996_dev *dev,

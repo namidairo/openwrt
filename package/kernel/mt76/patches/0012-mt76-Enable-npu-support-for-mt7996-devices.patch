@@ -1,10 +1,10 @@
-From cc08489231df966e47011953cc2fb1efc9d72220 Mon Sep 17 00:00:00 2001
-Message-ID: <cc08489231df966e47011953cc2fb1efc9d72220.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From d4feb82ef5a250cd995c30dff98e7f8ae44c6023 Mon Sep 17 00:00:00 2001
+Message-ID: <d4feb82ef5a250cd995c30dff98e7f8ae44c6023.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 19:17:13 +0200
-Subject: [PATCH 12/14] mt76: Enable npu support for mt7996 devices
+Subject: [PATCH 12/18] mt76: Enable npu support for mt7996 devices
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---

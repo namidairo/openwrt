@@ -1,10 +1,10 @@
-From 21cb39650341e4e902557a77399e5d81c3087589 Mon Sep 17 00:00:00 2001
-Message-ID: <21cb39650341e4e902557a77399e5d81c3087589.1764242430.git.lorenzo@kernel.org>
-In-Reply-To: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
-References: <ae5b6d06472f021a935f852c6ade45bac0e8554e.1764242430.git.lorenzo@kernel.org>
+From d5fa0129b98c78547634cd006a7bec4ca92d0e1c Mon Sep 17 00:00:00 2001
+Message-ID: <d5fa0129b98c78547634cd006a7bec4ca92d0e1c.1764499519.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 00:14:22 +0200
-Subject: [PATCH 06/14] mt76: mt7996: Add mt7992_npu_txrx_offload_init routine
+Subject: [PATCH 06/18] mt76: mt7996: Add mt7992_npu_txrx_offload_init routine
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
  1 file changed, 37 insertions(+), 26 deletions(-)
 
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index ac185c59..f5fa5f8f 100644
+index da66cd71..5557160c 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -8,34 +8,14 @@
