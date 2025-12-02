@@ -1,7 +1,7 @@
 From f3b9c709457bfd5fc83f53297e995244e092dd57 Mon Sep 17 00:00:00 2001
-Message-ID: <f3b9c709457bfd5fc83f53297e995244e092dd57.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+Message-ID: <f3b9c709457bfd5fc83f53297e995244e092dd57.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 13:37:20 +0200
 Subject: [PATCH 07/18] mt76: mt7996: npu: rename mt7996_npu_rxd_init() in

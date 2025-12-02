@@ -1,7 +1,7 @@
 From d5fa0129b98c78547634cd006a7bec4ca92d0e1c Mon Sep 17 00:00:00 2001
-Message-ID: <d5fa0129b98c78547634cd006a7bec4ca92d0e1c.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+Message-ID: <d5fa0129b98c78547634cd006a7bec4ca92d0e1c.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 00:14:22 +0200
 Subject: [PATCH 06/18] mt76: mt7996: Add mt7992_npu_txrx_offload_init routine

@@ -1,40 +1,26 @@
-From 1742e7f0f7a42aaf4ddee4309e63133342627e1a Mon Sep 17 00:00:00 2001
-Message-ID: <1742e7f0f7a42aaf4ddee4309e63133342627e1a.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+From 0415285f71a13ddc5bd0c45d7db3bfcc972f5adf Mon Sep 17 00:00:00 2001
+Message-ID: <0415285f71a13ddc5bd0c45d7db3bfcc972f5adf.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Wed, 26 Nov 2025 23:20:21 +0100
 Subject: [PATCH 15/18] mt76: mt7996: Do not schedule npu queues during reset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
- mt76.h       | 20 ++++++++++++++++++++
+ mt76.h       | 14 ++++++++++++++
  mt7996/dma.c |  6 ++++++
  mt7996/mac.c |  6 ++++++
- 3 files changed, 32 insertions(+)
+ 3 files changed, 26 insertions(+)
 
 diff --git a/mt76.h b/mt76.h
-index c7195e13..f30da62a 100644
+index c7195e13..a89bf499 100644
 --- a/mt76.h
 +++ b/mt76.h
-@@ -67,6 +67,7 @@
- 				 FIELD_PREP(MT_QFLAG_WED_RING, _n))
- #define MT_NPU_Q_TX(_n)		__MT_NPU_Q(MT76_WED_Q_TX, _n)
- #define MT_NPU_Q_RX(_n)		__MT_NPU_Q(MT76_WED_Q_RX, _n)
-+#define MT_NPU_Q_TXFREE		__MT_NPU_Q(MT76_WED_Q_TXFREE, 0)
- 
- struct mt76_dev;
- struct mt76_phy;
-@@ -2015,6 +2016,25 @@ static inline bool mt76_queue_is_npu_rx(struct mt76_queue *q)
+@@ -2015,6 +2015,20 @@ static inline bool mt76_queue_is_npu_rx(struct mt76_queue *q)
  	       FIELD_GET(MT_QFLAG_WED_TYPE, q->flags) == MT76_WED_Q_RX;
  }
  
-+static inline bool mt76_queue_is_npu_tx_free(struct mt76_queue *q)
-+{
-+	return mt76_queue_is_npu(q) &&
-+	       FIELD_GET(MT_QFLAG_WED_TYPE, q->flags) == MT76_WED_Q_TXFREE;
-+}
-+
 +static inline bool mt76_npu_queue_should_schedule(struct mt76_queue *q)
 +{
 +	struct mt76_dev *dev = q->dev;
@@ -42,7 +28,8 @@ index c7195e13..f30da62a 100644
 +	if (!mt76_npu_device_active(dev))
 +		return true;
 +
-+	if (!mt76_queue_is_wed_rro(q) && !mt76_queue_is_npu_tx_free(q))
++	if (!mt76_queue_is_wed_rro(q) &&
++	    FIELD_GET(MT_QFLAG_WED_TYPE, q->flags) != MT76_WED_Q_TXFREE)
 +		return true;
 +
 +	return false;
@@ -52,7 +39,7 @@ index c7195e13..f30da62a 100644
  mt76_token_release(struct mt76_dev *dev, int token, bool *wake);
  int mt76_token_consume(struct mt76_dev *dev, struct mt76_txwi_cache **ptxwi);
 diff --git a/mt7996/dma.c b/mt7996/dma.c
-index b8f9a088..1711eea0 100644
+index b8f9a088..771bd985 100644
 --- a/mt7996/dma.c
 +++ b/mt7996/dma.c
 @@ -750,6 +750,9 @@ int mt7996_dma_init(struct mt7996_dev *dev)
@@ -61,21 +48,27 @@ index b8f9a088..1711eea0 100644
  		dev->mt76.q_rx[MT_RXQ_MAIN_WA].wed = wed;
 +	} else if (is_mt7992(&dev->mt76) &&
 +		   mt76_npu_device_active(&dev->mt76)) {
-+		dev->mt76.q_rx[MT_RXQ_MAIN_WA].flags = MT_NPU_Q_TXFREE;
++		dev->mt76.q_rx[MT_RXQ_MAIN_WA].flags = MT_WED_Q_TXFREE;
  	}
  
  	if (mt7996_has_wa(dev)) {
-@@ -764,7 +767,10 @@ int mt7996_dma_init(struct mt7996_dev *dev)
- 		if (mtk_wed_device_active(wed)) {
+@@ -765,6 +768,7 @@ int mt7996_dma_init(struct mt7996_dev *dev)
  			dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].flags = MT_WED_Q_TXFREE;
  			dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].wed = wed;
-+		} else if (mt76_npu_device_active(&dev->mt76)) {
-+			dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].flags = MT_NPU_Q_TXFREE;
  		}
 +
  		ret = mt76_queue_alloc(dev, &dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0],
  				       MT_RXQ_ID(MT_RXQ_TXFREE_BAND0),
  				       MT7996_RX_MCU_RING_SIZE,
+@@ -882,6 +886,8 @@ int mt7996_dma_init(struct mt7996_dev *dev)
+ 				/* tx free notify event from WA for band0 */
+ 				dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].flags = MT_WED_Q_TXFREE;
+ 				dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].wed = wed;
++			} else if (mt76_npu_device_active(&dev->mt76)) {
++				dev->mt76.q_rx[MT_RXQ_TXFREE_BAND0].flags = MT_WED_Q_TXFREE;
+ 			}
+ 
+ 			ret = mt76_queue_alloc(dev,
 diff --git a/mt7996/mac.c b/mt7996/mac.c
 index 8c908b3b..b718fd7d 100644
 --- a/mt7996/mac.c

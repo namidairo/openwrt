@@ -1,7 +1,7 @@
-From 89e96984bafa0f60e3cff5c92ce29bbcf3d9221a Mon Sep 17 00:00:00 2001
-Message-ID: <89e96984bafa0f60e3cff5c92ce29bbcf3d9221a.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+From 26d19cf993db0d42f25e660ce7c0f8db3a1b87ed Mon Sep 17 00:00:00 2001
+Message-ID: <26d19cf993db0d42f25e660ce7c0f8db3a1b87ed.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 29 Nov 2025 14:48:34 +0100
 Subject: [PATCH 13/18] mt76: mt7996: Introduce __mt7996_npu_hw_init routine
@@ -9,9 +9,9 @@ Subject: [PATCH 13/18] mt76: mt7996: Introduce __mt7996_npu_hw_init routine
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
  mt7996/mac.c    |  3 ++-
- mt7996/mt7996.h | 13 ++++++++++++-
- mt7996/npu.c    | 24 ++++++++++--------------
- 3 files changed, 24 insertions(+), 16 deletions(-)
+ mt7996/mt7996.h |  6 ++++++
+ mt7996/npu.c    | 31 +++++++++++++++++++------------
+ 3 files changed, 27 insertions(+), 13 deletions(-)
 
 diff --git a/mt7996/mac.c b/mt7996/mac.c
 index 5e8db9ac..8c908b3b 100644
@@ -35,31 +35,28 @@ index 5e8db9ac..8c908b3b 100644
  
  	mt7996_for_each_phy(dev, phy)
 diff --git a/mt7996/mt7996.h b/mt7996/mt7996.h
-index de31385a..9944f92e 100644
+index de31385a..3928e059 100644
 --- a/mt7996/mt7996.h
 +++ b/mt7996/mt7996.h
-@@ -881,7 +881,18 @@ int mt7996_mtk_init_debugfs(struct mt7996_phy *phy, struct dentry *dir);
+@@ -881,10 +881,16 @@ int mt7996_mtk_init_debugfs(struct mt7996_phy *phy, struct dentry *dir);
  int mt7996_dma_rro_init(struct mt7996_dev *dev);
  
  #ifdef CONFIG_MT7996_NPU
--int mt7996_npu_hw_init(struct mt7996_dev *dev);
 +int __mt7996_npu_hw_init(struct mt7996_dev *dev);
-+static inline int mt7996_npu_hw_init(struct mt7996_dev *dev)
-+{
-+	int err;
-+
-+	mutex_lock(&dev->mt76.mutex);
-+	err = __mt7996_npu_hw_init(dev);
-+	mutex_unlock(&dev->mt76.mutex);
-+
-+	return err;
-+}
-+
+ int mt7996_npu_hw_init(struct mt7996_dev *dev);
  int mt7996_npu_hw_stop(struct mt7996_dev *dev);
  int mt7996_npu_rx_queues_init(struct mt7996_dev *dev);
  #else
++static inline int __mt7996_npu_hw_init(struct mt7996_dev *dev)
++{
++	return 0;
++}
++
+ static inline int mt7996_npu_hw_init(struct mt7996_dev *dev)
+ {
+ 	return 0;
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index ed046867..40be001b 100644
+index ed046867..7f4d7d49 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -525,20 +525,18 @@ int mt7996_npu_rx_queues_init(struct mt7996_dev *dev)
@@ -87,7 +84,7 @@ index ed046867..40be001b 100644
  
  	if (is_mt7996(&dev->mt76))
  		err = mt7996_npu_rxd_init(dev, npu);
-@@ -546,30 +544,28 @@ int mt7996_npu_hw_init(struct mt7996_dev *dev)
+@@ -546,27 +544,36 @@ int mt7996_npu_hw_init(struct mt7996_dev *dev)
  		err = mt7992_npu_rxd_init(dev, npu);
  
  	if (err)
@@ -117,13 +114,19 @@ index ed046867..40be001b 100644
  	for (i = MT_RXQ_NPU0; i <= MT_RXQ_NPU1; i++)
  		airoha_npu_wlan_enable_irq(npu, i - MT_RXQ_NPU0);
 -unlock:
--	mutex_unlock(&dev->mt76.mutex);
- 
--	return err;
++
 +	return 0;
- }
++}
++
++int mt7996_npu_hw_init(struct mt7996_dev *dev)
++{
++	int err;
++
++	mutex_lock(&dev->mt76.mutex);
++	err = __mt7996_npu_hw_init(dev);
+ 	mutex_unlock(&dev->mt76.mutex);
  
- int mt7996_npu_hw_stop(struct mt7996_dev *dev)
+ 	return err;
 -- 
 2.52.0
 

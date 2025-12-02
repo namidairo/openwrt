@@ -1,5 +1,5 @@
 From f1fa256dca899cf2818928aa7657a2a4fbbb4ad9 Mon Sep 17 00:00:00 2001
-Message-ID: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+Message-ID: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 21 Nov 2025 11:40:29 +0100
 Subject: [PATCH 01/18] wifi: mt76: mt7996: Fix NPU stop procedure

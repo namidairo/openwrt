@@ -1,7 +1,7 @@
-From 21153415c8c8e47768d36a23d242cbea733d8f67 Mon Sep 17 00:00:00 2001
-Message-ID: <21153415c8c8e47768d36a23d242cbea733d8f67.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+From 0f06812b52a2c13713e57d3042e8177a3dd3f35e Mon Sep 17 00:00:00 2001
+Message-ID: <0f06812b52a2c13713e57d3042e8177a3dd3f35e.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sun, 30 Nov 2025 10:56:00 +0100
 Subject: [PATCH 14/18] mt76: dma: Do not reset idx for NPU tx queues during

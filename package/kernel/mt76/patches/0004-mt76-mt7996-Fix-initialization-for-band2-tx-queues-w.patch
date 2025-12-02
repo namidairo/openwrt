@@ -1,7 +1,7 @@
 From 0d5e90c1200d801b87b79602f995feeafc2ad470 Mon Sep 17 00:00:00 2001
-Message-ID: <0d5e90c1200d801b87b79602f995feeafc2ad470.1764499519.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764499519.git.lorenzo@kernel.org>
+Message-ID: <0d5e90c1200d801b87b79602f995feeafc2ad470.1764671461.git.lorenzo@kernel.org>
+In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 18:15:39 +0200
 Subject: [PATCH 04/18] mt76: mt7996: Fix initialization for band2 tx queues
