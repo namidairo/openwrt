@@ -1,10 +1,10 @@
-From 89bc6c954e88527f80d7b33efbd29fe5bdf9bf81 Mon Sep 17 00:00:00 2001
-Message-ID: <89bc6c954e88527f80d7b33efbd29fe5bdf9bf81.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 9a639b90eb9c53073c8774a9648bb2d96cc27491 Mon Sep 17 00:00:00 2001
+Message-ID: <9a639b90eb9c53073c8774a9648bb2d96cc27491.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 24 Oct 2025 17:39:36 +0200
-Subject: [PATCH 03/18] mt76: dma: always enable RRO queues for non-MT7992
+Subject: [PATCH 03/17] mt76: dma: always enable RRO queues for non-MT7992
  chipset
 
 Intialize NPU desc_base after configuring ring_size.

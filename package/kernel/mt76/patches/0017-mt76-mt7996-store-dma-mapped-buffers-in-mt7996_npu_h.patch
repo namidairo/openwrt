@@ -1,10 +1,10 @@
-From 0ad889f9f156eb1f21205c52c170f971f016509d Mon Sep 17 00:00:00 2001
-Message-ID: <0ad889f9f156eb1f21205c52c170f971f016509d.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 97d126041a2e34f5c529d9fab376b81df99877b0 Mon Sep 17 00:00:00 2001
+Message-ID: <97d126041a2e34f5c529d9fab376b81df99877b0.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 29 Nov 2025 14:34:18 +0100
-Subject: [PATCH 17/18] mt76: mt7996: store dma mapped buffers in
+Subject: [PATCH 17/17] mt76: mt7996: store dma mapped buffers in
  mt7996_npu_hw_init()
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
@@ -36,7 +36,7 @@ index 3928e059..f6dc0f18 100644
  	u8 fw_debug_wm;
  	u8 fw_debug_wa;
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index 7f4d7d49..a1120656 100644
+index 79419968..897918a3 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -344,12 +344,14 @@ static int mt7996_npu_txd_init(struct mt7996_dev *dev, struct airoha_npu *npu)

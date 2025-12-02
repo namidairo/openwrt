@@ -1,10 +1,10 @@
-From 9b8e5206193f9e414892b9a385e3ae3eceab8ca6 Mon Sep 17 00:00:00 2001
-Message-ID: <9b8e5206193f9e414892b9a385e3ae3eceab8ca6.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 6760f9629d56fe89369250f18365c621a475e203 Mon Sep 17 00:00:00 2001
+Message-ID: <6760f9629d56fe89369250f18365c621a475e203.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Wed, 26 Nov 2025 22:59:52 +0100
-Subject: [PATCH 02/18] mt76: npu: Add missing rx_token_size initialization
+Subject: [PATCH 02/17] mt76: npu: Add missing rx_token_size initialization
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---

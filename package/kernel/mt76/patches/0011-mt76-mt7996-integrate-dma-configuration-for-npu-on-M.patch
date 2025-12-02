@@ -1,10 +1,10 @@
-From 8a65b54c66afef8fcb58d01f57590a81c07abdbd Mon Sep 17 00:00:00 2001
-Message-ID: <8a65b54c66afef8fcb58d01f57590a81c07abdbd.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 005232ac4ff9ea5ebf12cfd984dddee99b6516b9 Mon Sep 17 00:00:00 2001
+Message-ID: <005232ac4ff9ea5ebf12cfd984dddee99b6516b9.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 18:43:14 +0200
-Subject: [PATCH 11/18] mt76: mt7996: integrate dma configuration for npu on
+Subject: [PATCH 11/17] mt76: mt7996: integrate dma configuration for npu on
  MT7990
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>

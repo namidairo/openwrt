@@ -1,10 +1,10 @@
-From 7024733a35aea8b60a88a375a5062c7a7b4bcffa Mon Sep 17 00:00:00 2001
-Message-ID: <7024733a35aea8b60a88a375a5062c7a7b4bcffa.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 7fbdb91f05ea8f6cfff3fa8ef1f8b1e243b9ef24 Mon Sep 17 00:00:00 2001
+Message-ID: <7fbdb91f05ea8f6cfff3fa8ef1f8b1e243b9ef24.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Tue, 2 Dec 2025 11:27:07 +0100
-Subject: [PATCH 16/18] mt76: dma: Do not kick npu queues in
+Subject: [PATCH 16/17] mt76: dma: Do not kick npu queues in
  mt76_dma_rx_fill_buf()
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>

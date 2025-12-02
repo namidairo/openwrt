@@ -1,10 +1,10 @@
-From 0415285f71a13ddc5bd0c45d7db3bfcc972f5adf Mon Sep 17 00:00:00 2001
-Message-ID: <0415285f71a13ddc5bd0c45d7db3bfcc972f5adf.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From a789613893788468da08b9d16dd36080d16f0edc Mon Sep 17 00:00:00 2001
+Message-ID: <a789613893788468da08b9d16dd36080d16f0edc.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Wed, 26 Nov 2025 23:20:21 +0100
-Subject: [PATCH 15/18] mt76: mt7996: Do not schedule npu queues during reset
+Subject: [PATCH 15/17] mt76: mt7996: Do not schedule npu queues during reset
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---

@@ -1,10 +1,10 @@
-From a4596195ddce7b01fb63d4f90e94dbb39ea00dc9 Mon Sep 17 00:00:00 2001
-Message-ID: <a4596195ddce7b01fb63d4f90e94dbb39ea00dc9.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 44996cc18a3fbdf99e3eca6d7faaa37e9ddd7b6f Mon Sep 17 00:00:00 2001
+Message-ID: <44996cc18a3fbdf99e3eca6d7faaa37e9ddd7b6f.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 25 Oct 2025 17:34:54 +0200
-Subject: [PATCH 09/18] mt76: mt7996: Integrate NPU in RRO session management
+Subject: [PATCH 09/17] mt76: mt7996: Integrate NPU in RRO session management
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---

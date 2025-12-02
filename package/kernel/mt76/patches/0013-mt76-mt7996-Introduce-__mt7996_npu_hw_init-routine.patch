@@ -1,10 +1,10 @@
-From 26d19cf993db0d42f25e660ce7c0f8db3a1b87ed Mon Sep 17 00:00:00 2001
-Message-ID: <26d19cf993db0d42f25e660ce7c0f8db3a1b87ed.1764671461.git.lorenzo@kernel.org>
-In-Reply-To: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
-References: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From f7afa42ae6a7789ec2f8249d186dde63060be206 Mon Sep 17 00:00:00 2001
+Message-ID: <f7afa42ae6a7789ec2f8249d186dde63060be206.1764712622.git.lorenzo@kernel.org>
+In-Reply-To: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
+References: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Sat, 29 Nov 2025 14:48:34 +0100
-Subject: [PATCH 13/18] mt76: mt7996: Introduce __mt7996_npu_hw_init routine
+Subject: [PATCH 13/17] mt76: mt7996: Introduce __mt7996_npu_hw_init routine
 
 Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 ---
@@ -56,7 +56,7 @@ index de31385a..3928e059 100644
  {
  	return 0;
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index ed046867..7f4d7d49 100644
+index 1a77a7dc..79419968 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -525,20 +525,18 @@ int mt7996_npu_rx_queues_init(struct mt7996_dev *dev)

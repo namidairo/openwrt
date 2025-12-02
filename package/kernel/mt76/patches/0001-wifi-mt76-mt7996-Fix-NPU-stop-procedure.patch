@@ -1,8 +1,8 @@
-From f1fa256dca899cf2818928aa7657a2a4fbbb4ad9 Mon Sep 17 00:00:00 2001
-Message-ID: <f1fa256dca899cf2818928aa7657a2a4fbbb4ad9.1764671461.git.lorenzo@kernel.org>
+From 6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7 Mon Sep 17 00:00:00 2001
+Message-ID: <6b7faf9dc0f8ea8c7701273a96e3d81257d7c6d7.1764712622.git.lorenzo@kernel.org>
 From: Lorenzo Bianconi <lorenzo@kernel.org>
 Date: Fri, 21 Nov 2025 11:40:29 +0100
-Subject: [PATCH 01/18] wifi: mt76: mt7996: Fix NPU stop procedure
+Subject: [PATCH 01/17] wifi: mt76: mt7996: Fix NPU stop procedure
 
 Fix NPU stop procedure used during device L1 SER recovery.
 Move mt7996_npu_hw_stop before disabling rx NAPIs.
@@ -37,7 +37,7 @@ index 1ce2d08a..5e8db9ac 100644
  
  	if (mt7996_wait_reset_state(dev, MT_MCU_CMD_RESET_DONE)) {
 diff --git a/mt7996/npu.c b/mt7996/npu.c
-index 29bb735d..da66cd71 100644
+index 29bb735d..067ef647 100644
 --- a/mt7996/npu.c
 +++ b/mt7996/npu.c
 @@ -320,33 +320,38 @@ unlock:
@@ -74,7 +74,7 @@ index 29bb735d..da66cd71 100644
 -			continue;
 -		}
 +		err = -ETIMEDOUT;
-+		msleep(10);
++		usleep_range(10000, 15000);
  	}
  
  	if (!err)
