@@ -82,7 +82,7 @@ define Device/gemtek_w1700k
   DEVICE_ALT2_MODEL := W1700K
   DEVICE_PACKAGES := kmod-i2c-an7581 kmod-hwmon-nct7802 \
 		    kmod-mt7996-firmware kmod-phy-rtl8261n \
-		    wpad-basic-mbedtls
+		    wpad-basic-mbedtls airoha-en7581-mt7996-npu-firmware
   KERNEL_LOADADDR := 0x80088000
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
   SOC := an7581
