@@ -332,6 +332,8 @@
 			reset-gpios = <&en7581_pinctrl 46 GPIO_ACTIVE_LOW>;
 			reset-assert-us = <40000>;
 			reset-deassert-us = <150000>;
+			interrupt-parent = <&en7581_pinctrl>;
+			interrupts = <22 IRQ_TYPE_EDGE_FALLING>;
 			realtek,pnswap-tx;
 			realtek,pnswap-rx;
 		};
@@ -342,10 +344,20 @@
 			reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
 			reset-assert-us = <40000>;
 			reset-deassert-us = <150000>;
+			interrupt-parent = <&en7581_pinctrl>;
+			interrupts = <23 IRQ_TYPE_EDGE_FALLING>;
 			realtek,pnswap-tx;
 			realtek,pnswap-rx;
 		};
 	};
+};
+
+&gsw_phy1 {
+	status = "okay";
+};
+
+&gsw_phy2 {
+	status = "okay";
 };
 
 &gsw_port1 {
