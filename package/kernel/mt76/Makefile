@@ -706,7 +706,7 @@ endef
 define KernelPackage/mt7996-firmware-common/install
 	$(INSTALL_DIR) $(1)/lib/firmware/mediatek/mt7996
 	cp \
-		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_dsp.bin \
+		./files/firmware/mt7996/mt7996_dsp.bin \
 		$(1)/lib/firmware/mediatek/mt7996
 endef
 
@@ -715,9 +715,9 @@ define KernelPackage/mt7996-firmware/install
 	cp \
 		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_eeprom.bin \
 		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_eeprom_2i5i6i.bin \
-		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_rom_patch.bin \
-		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_wa.bin \
-		$(PKG_BUILD_DIR)/firmware/mt7996/mt7996_wm.bin \
+		./files/firmware/mt7996/mt7996_rom_patch.bin \
+		./files/firmware/mt7996/mt7996_wa.bin \
+		./files/firmware/mt7996/mt7996_wm.bin \
 		$(1)/lib/firmware/mediatek/mt7996
 endef
 
