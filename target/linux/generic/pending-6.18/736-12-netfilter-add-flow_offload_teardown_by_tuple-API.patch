@@ -1,0 +1,83 @@
+From: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Date: Wed, 24 Sep 2025 12:51:29 +0800
+Subject: [PATCH] netfilter: add flow_offload_teardown_by_tuple API
+
+Without this patch, users are unable to delete or flush flow rule and
+PPE entries via the FTNL application.  Required by mtk_ppe xfrm hw
+offload which calls this function to tear down entries by crypto id.
+
+Walk the global flowtable list and netdev iif candidates under
+rcu_read_lock(): flowtables is published with list_add_rcu /
+list_del_rcu, netdevs via for_each_netdev_rcu, and flow_offload_lookup()
+requires RCU for rhashtable_lookup(). synchronize_rcu() after unlist
+in nf_flow_table_free() so RCU readers cannot observe a dying table.
+
+[dpawlik: ported from mtk-openwrt-feeds 25.12 999-ppe-07; add RCU]
+Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+---
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -301,6 +301,7 @@ int nf_flow_table_init(struct nf_flowtable *flow_table);
+ void nf_flow_table_free(struct nf_flowtable *flow_table);
+ 
+ void flow_offload_teardown(struct flow_offload *flow);
++void flow_offload_teardown_by_tuple(struct flow_offload_tuple *tuple);
+ 
+ void nf_flow_snat_port(const struct flow_offload *flow,
+ 		       struct sk_buff *skb, unsigned int thoff,
+
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -387,6 +387,32 @@ static void flow_offload_del(struct nf_flowtable *flow_table,
+ }
+ EXPORT_SYMBOL_GPL(flow_offload_teardown);
+ 
++void flow_offload_teardown_by_tuple(struct flow_offload_tuple *tuple)
++{
++	struct net_device *netdev;
++	struct nf_flowtable *flowtable;
++	struct flow_offload_tuple_rhash *tuplehash;
++	struct flow_offload *flow;
++	int dir;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(flowtable, &flowtables, list) {
++		for_each_netdev_rcu(&init_net, netdev) {
++			tuple->iifidx = netdev->ifindex;
++			tuplehash = flow_offload_lookup(flowtable, tuple);
++			if (!tuplehash)
++				continue;
++
++			dir = tuplehash->tuple.dir;
++			flow = container_of(tuplehash, struct flow_offload,
++					    tuplehash[dir]);
++			flow_offload_teardown(flow);
++		}
++	}
++	rcu_read_unlock();
++}
++EXPORT_SYMBOL_GPL(flow_offload_teardown_by_tuple);
++
+ struct flow_offload_tuple_rhash *
+ flow_offload_lookup(struct nf_flowtable *flow_table,
+ 		    struct flow_offload_tuple *tuple)
+@@ -707,7 +733,7 @@ int nf_flow_table_init(struct nf_flowtable *flowtable)
+ 			   &flowtable->gc_work, HZ);
+ 
+ 	mutex_lock(&flowtable_lock);
+-	list_add(&flowtable->list, &flowtables);
++	list_add_rcu(&flowtable->list, &flowtables);
+ 	mutex_unlock(&flowtable_lock);
+ 
+ 	return 0;
+@@ -752,8 +778,9 @@ EXPORT_SYMBOL_GPL(nf_flow_table_cleanup);
+ void nf_flow_table_free(struct nf_flowtable *flow_table)
+ {
+ 	mutex_lock(&flowtable_lock);
+-	list_del(&flow_table->list);
++	list_del_rcu(&flow_table->list);
+ 	mutex_unlock(&flowtable_lock);
++	synchronize_rcu();
+ 
+ 	cancel_delayed_work_sync(&flow_table->gc_work);
+ 	nf_flow_table_offload_flush(flow_table);

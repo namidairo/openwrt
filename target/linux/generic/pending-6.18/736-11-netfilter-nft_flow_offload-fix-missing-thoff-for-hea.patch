@@ -1,0 +1,47 @@
+From: chak-kei.lam <chak-kei.lam@mediatek.com>
+Date: Thu, 12 Mar 2026 10:11:50 +0800
+Subject: [PATCH] netfilter: nft_flow_offload: fix missing thoff for header
+ pointer lookup
+
+When nft_thoff(pkt) returns zero, the subsequent call to
+skb_header_pointer() for the TCP header uses offset 0, which points
+to the network header rather than the transport header. This causes
+incorrect TCP flag inspection (fin/rst) and may lead to flows being
+incorrectly offloaded or rejected.
+
+Fix by computing a fallback transport header offset from the IP header
+length when nft_thoff() returns zero.
+
+Signed-off-by: chak-kei.lam <chak-kei.lam@mediatek.com>
+[dpawlik: ported from mtk-openwrt-feeds 25.12 999-ppe-37]
+Signed-off-by: Daniel Pawlik <dpawlik@redhat.com>
+---
+ net/netfilter/nft_flow_offload.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/net/netfilter/nft_flow_offload.c
++++ b/net/netfilter/nft_flow_offload.c
+@@ -519,6 +519,7 @@ static void nft_flow_offload_eval(const
+ 	struct nf_flow_route route = {};
+ 	enum ip_conntrack_info ctinfo;
+ 	struct flow_offload *flow;
++	unsigned int thoff;
+ 	enum ip_conntrack_dir dir;
+ 	struct nf_conn *ct;
+ 	int ret;
+@@ -537,7 +538,15 @@ static void nft_flow_offload_eval(const
+ 	switch (ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum) {
+ 	case IPPROTO_TCP:
+-		tcph = skb_header_pointer(pkt->skb, nft_thoff(pkt),
++		thoff = nft_thoff(pkt);
++		if (!thoff) {
++			if (pkt->skb->protocol == htons(ETH_P_IP))
++				thoff = ip_hdrlen(pkt->skb);
++			else if (pkt->skb->protocol == htons(ETH_P_IPV6))
++				thoff = sizeof(struct ipv6hdr);
++		}
++
++		tcph = skb_header_pointer(pkt->skb, thoff,
+ 					  sizeof(_tcph), &_tcph);
+ 		if (unlikely(!tcph || tcph->fin || tcph->rst ||
+ 			     !nf_conntrack_tcp_established(ct)))

@@ -1,0 +1,43 @@
+From: Kuan-Ying Lee <kuan-ying.lee@mediatek.com>
+Date: Mon, 1 Jan 2024 00:00:00 +0800
+Subject: [PATCH] netfilter: xt_FLOWOFFLOAD: enable IPsec flow offload
+
+Guard FLOW_OFFLOAD_XMIT_DIRECT MAC copy against XFRM flows, and remove the
+NEIGH-only guard in xt_flowoffload_route so XFRM flows also go through the
+forward path lookup.
+
+Must be applied after 650-netfilter-add-xt_FLOWOFFLOAD-target.patch which
+creates xt_FLOWOFFLOAD.c.
+
+[dpawlik: ported from mtk-openwrt-feeds 25.12 999-ppe-30;
+ adapted for 6.18 xt_FLOWOFFLOAD.c context (hack-6.18 patch)]
+Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+---
+ net/netfilter/xt_FLOWOFFLOAD.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/net/netfilter/xt_FLOWOFFLOAD.c
++++ b/net/netfilter/xt_FLOWOFFLOAD.c
+@@ -459,6 +459,7 @@ static void nf_dev_forward_path(struct n
+ 	route->tuple[!dir].in.ingress_vlans = info.ingress_vlans;
+
+-	if (info.xmit_type == FLOW_OFFLOAD_XMIT_DIRECT) {
++	if (info.xmit_type == FLOW_OFFLOAD_XMIT_DIRECT &&
++	    route->tuple[dir].xmit_type != FLOW_OFFLOAD_XMIT_XFRM) {
+ 		memcpy(route->tuple[dir].out.h_source, info.h_source, ETH_ALEN);
+ 		memcpy(route->tuple[dir].out.h_dest, info.h_dest, ETH_ALEN);
+ 		route->tuple[dir].out.ifindex = info.outdev->ifindex;
+@@ -504,11 +505,8 @@ static int xt_flowoffload_route(struct s
+ 	nf_default_forward_path(route, this_dst, dir, devs);
+ 	nf_default_forward_path(route, other_dst, !dir, devs);
+
+-	if (route->tuple[dir].xmit_type	== FLOW_OFFLOAD_XMIT_NEIGH &&
+-	    route->tuple[!dir].xmit_type == FLOW_OFFLOAD_XMIT_NEIGH) {
+-		nf_dev_forward_path(route, ct, dir, devs);
+-		nf_dev_forward_path(route, ct, !dir, devs);
+-	}
++	nf_dev_forward_path(route, ct, dir, devs);
++	nf_dev_forward_path(route, ct, !dir, devs);
+
+ 	return 0;
+ }

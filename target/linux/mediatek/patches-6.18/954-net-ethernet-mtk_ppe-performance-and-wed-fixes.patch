@@ -1,0 +1,74 @@
+From a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 Mon Sep 17 00:00:00 2001
+From: Rex Lu <rex.lu@mediatek.com>
+Date: Fri, 27 Sep 2024 13:46:33 +0800
+Subject: [PATCH] net: ethernet: mtk_wed: SER and MLO stability fixes
+
+Three WED (Wireless Ethernet Dispatch) fixes from mtk-openwrt-feeds 25.12:
+
+- wed-01: Remove double-free of HW RRO buffer in
+  mtk_wed_rx_reset. The buffer is already freed via
+  mtk_wed_free_rx_buffer which calls mtk_wed_hwrro_free_buffer.
+
+- wed-03: Fix inverted condition in mtk_wdma_rx_reset that
+  skipped rings WITH descriptors instead of rings WITHOUT.
+  Also add prefetch index and FIFO reset during SER to prevent
+  WDMA RX hang on WED1.
+
+- wed-05: Fix MLO TX throughput -- change wed_clr to wed_set
+  for TX_DDONE_CHK_LAST bit, which must be enabled for proper
+  TX completion detection in MLO mode.
+
+Signed-off-by: Rex Lu <rex.lu@mediatek.com>
+[ported from mtk-openwrt-feeds 25.12 patches wed-01/03/05,
+ kernel 6.12 to 6.18]
+Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+---
+ drivers/net/ethernet/mediatek/mtk_wed.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_wed.c
++++ b/drivers/net/ethernet/mediatek/mtk_wed.c
+@@ -257,7 +257,7 @@ mtk_wdma_rx_reset(struct mtk_wed_device
+ 	wdma_w32(dev, MTK_WDMA_RESET_IDX, 0);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(dev->rx_wdma); i++) {
+-		if (dev->rx_wdma[i].desc)
++		if (!dev->rx_wdma[i].desc)
+ 			continue;
+ 
+ 		wdma_w32(dev,
+@@ -1716,5 +1716,4 @@ mtk_wed_rx_reset(struct mtk_wed_device *
+ 	mtk_wed_free_rx_buffer(dev);
+-	mtk_wed_hwrro_free_buffer(dev);
+ 
+ 	return 0;
+ }
+@@ -1780,6 +1779,21 @@ mtk_wed_reset_dma(struct mtk_wed_device
+ 			wed_clr(dev, MTK_WED_WDMA_RX_PREF_CFG,
+ 				MTK_WED_WDMA_RX_PREF_DDONE2_EN);
+ 
++			/* Reset prefetch index */
++			wed_set(dev, MTK_WED_WDMA_RX_PREF_CFG,
++				MTK_WED_WDMA_RX_PREF_RX0_SIDX_CLR |
++				MTK_WED_WDMA_RX_PREF_RX1_SIDX_CLR);
++
++			wed_clr(dev, MTK_WED_WDMA_RX_PREF_CFG,
++				MTK_WED_WDMA_RX_PREF_RX0_SIDX_CLR |
++				MTK_WED_WDMA_RX_PREF_RX1_SIDX_CLR);
++
++			/* Reset prefetch FIFO */
++			wed_w32(dev, MTK_WED_WDMA_RX_PREF_FIFO_CFG,
++				MTK_WED_WDMA_RX_PREF_FIFO_RX0_CLR |
++				MTK_WED_WDMA_RX_PREF_FIFO_RX1_CLR);
++			wed_w32(dev, MTK_WED_WDMA_RX_PREF_FIFO_CFG, 0);
++
+ 			/* 2. Reset dma index */
+ 			wed_w32(dev, MTK_WED_WDMA_RESET_IDX,
+ 				MTK_WED_WDMA_RESET_IDX_RX_ALL);
+@@ -2099,5 +2112,5 @@ mtk_wed_dma_enable(struct mtk_wed_device
+ 
+-		wed_clr(dev, MTK_WED_WPDMA_GLO_CFG,
++		wed_set(dev, MTK_WED_WPDMA_GLO_CFG,
+ 			MTK_WED_WPDMA_GLO_CFG_TX_DDONE_CHK_LAST);
+ 		wed_set(dev, MTK_WED_WPDMA_GLO_CFG,
+ 			MTK_WED_WPDMA_GLO_CFG_TX_DDONE_CHK |
