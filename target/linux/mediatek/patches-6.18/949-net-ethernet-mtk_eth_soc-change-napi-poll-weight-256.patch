@@ -1,0 +1,34 @@
+From: Mason Chang <mason-cw.chang@mediatek.com>
+Date: Mon, 22 Sep 2025 11:12:08 +0800
+Subject: [PATCH] net: ethernet: mtk_eth_soc: change napi poll weight to 256
+
+This parameter will strongly affect the peak throughput of the SW path.
+Increasing the NAPI poll weight reduces per-interrupt overhead and
+lowers latency variance under high packet rates.
+
+[dpawlik: ported from mtk-openwrt-feeds 25.12 999-eth-17;
+ adapted for 6.18 which has two netif_napi_add calls (no RSS/LRO)
+ and uses eth->rx_napi instead of eth->rx_napi[0].napi]
+Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c | 5 +++--
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h | 1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -44,3 +44,4 @@
+ #define MTK_FQ_DMA_HEAD		32
+ #define MTK_FQ_DMA_LENGTH	2048
++#define MTK_NAPI_WEIGHT		256
+ #define MTK_RX_ETH_HLEN		(ETH_HLEN + ETH_FCS_LEN)
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -5774,3 +5774,5 @@
+ 	strcpy(eth->dummy_dev->name, "mtk_eth");
+-	netif_napi_add(eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
+-	netif_napi_add(eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
++	netif_napi_add_weight(eth->dummy_dev, &eth->tx_napi, mtk_napi_tx,
++			      MTK_NAPI_WEIGHT);
++	netif_napi_add_weight(eth->dummy_dev, &eth->rx_napi, mtk_napi_rx,
++			      MTK_NAPI_WEIGHT);

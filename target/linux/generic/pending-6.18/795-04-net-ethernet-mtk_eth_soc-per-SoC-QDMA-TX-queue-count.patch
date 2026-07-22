@@ -4,19 +4,22 @@ Date: Thu, 23 Apr 2026 14:03:20 +0100
 Subject: [PATCH 4/9] net: ethernet: mtk_eth_soc: per-SoC QDMA TX queue count with
  register paging
 
-MT7988 (netsys_v3) has 32 QDMA TX queues but the register window only
-exposes 16 at a time; accessing the upper 16 requires selecting the
-register page via the qdma.page register first. On netsys_v1 and
-netsys_v2 the hardware still has 16 queues and the page register,
-though present at a fixed offset in the reg_map, is effectively only
-ever written to with page 0.
+MT7988 (netsys_v3) has 128 QDMA TX queues per the MT7988A datasheet
+(section 8.1.1.2.3), but the register window only exposes 16 at a
+time; accessing higher queues requires selecting the register page via
+the QTX_CFG_PAGE register (4-bit field, bits 3:0, supporting up to 16
+pages of 16 queues = 256 queues max). On netsys_v1 and netsys_v2 the
+hardware still has 16 queues and the page register, though present at
+a fixed offset in the reg_map, is effectively only ever written to
+with page 0.
 
 Replace the global MTK_QDMA_NUM_QUEUES define with a per-SoC
 num_tx_queues field in struct mtk_soc_data. Keep the count at 16 for
-V1 and V2, bump it to 32 only for MT7988 (V3). This matches the
-current behavior for every SoC that was already working -- including
-the ramips MT7621 that shares the driver -- while allowing V3 to use
-the full queue count.
+V1 and V2, bump it to 128 for MT7988 (V3) to match the hardware
+capability documented in the datasheet. This matches the current
+behavior for every SoC that was already working -- including the
+ramips MT7621 that shares the driver -- while allowing V3 to use the
+full queue count.
 
 Add a qdma.page field to struct mtk_reg_map. Populate it for all
 three QDMA reg maps:
@@ -167,7 +170,7 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
  	.ppe_num = 3,
  	.hash_offset = 4,
  	.has_accounting = true,
-+	.num_tx_queues = 32,
++	.num_tx_queues = 128,
  	.foe_entry_size = MTK_FOE_ENTRY_V3_SIZE,
  	.tx = {
  		DESC_SIZE(struct mtk_tx_dma_v2),
