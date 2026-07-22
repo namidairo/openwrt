@@ -1,0 +1,94 @@
+From: Daniel Pawlik <pawlik.dan@gmail.com>
+Date: Thu, 23 Jul 2026 12:00:00 +0200
+Subject: [PATCH] mt7996: flush airoha PPE flows on STA link remove
+
+Same-BSS disconnect/reconnect often does not move the bridge FDB port,
+so the airoha PPE switchdev FDB notifier never runs and stale FOEs
+remain (missing upload bind after reassoc on AN7581/W1700K).
+
+Call airoha_ppe_dev_flush_flows_by_mac() from mt7996 STA link remove
+so PPE L2/L4 entries and nf_flow HW offload bits are cleared when the
+WiFi driver tears down a STA link/WCID.
+
+Signed-off-by: Daniel Pawlik <pawlik.dan@gmail.com>
+---
+--- a/airoha_offload.h
++++ b/airoha_offload.h
+@@ -21,6 +21,8 @@
+ 		void (*check_skb)(struct airoha_ppe_dev *dev,
+ 				  struct sk_buff *skb, u16 hash,
+ 				  bool rx_wlan);
++		void (*flush_flows_by_mac)(struct airoha_ppe_dev *dev,
++					   const u8 *addr);
+ 	} ops;
+ 
+ 	void *priv;
+@@ -42,6 +44,13 @@
+ {
+ 	dev->ops.check_skb(dev, skb, hash, rx_wlan);
+ }
++
++static inline void airoha_ppe_dev_flush_flows_by_mac(struct airoha_ppe_dev *dev,
++						     const u8 *addr)
++{
++	if (dev->ops.flush_flows_by_mac)
++		dev->ops.flush_flows_by_mac(dev, addr);
++}
+ #else
+ static inline struct airoha_ppe_dev *airoha_ppe_get_dev(struct device *dev)
+ {
+@@ -63,6 +72,11 @@
+ 					    bool rx_wlan)
+ {
+ }
++
++static inline void airoha_ppe_dev_flush_flows_by_mac(struct airoha_ppe_dev *dev,
++						     const u8 *addr)
++{
++}
+ #endif
+ 
+ #define NPU_NUM_CORES		8
+--- a/mt7996/main.c
++++ b/mt7996/main.c
+@@ -1180,6 +1180,29 @@
+ 	return 0;
+ }
+ 
++static void mt7996_ppe_flush_sta_addr(struct mt7996_dev *dev, const u8 *addr)
++{
++	struct airoha_ppe_dev *ppe_dev;
++
++	if (!addr || is_zero_ether_addr(addr) || is_multicast_ether_addr(addr))
++		return;
++
++	rcu_read_lock();
++	ppe_dev = rcu_dereference(dev->mt76.mmio.ppe_dev);
++	if (ppe_dev)
++		airoha_ppe_dev_flush_flows_by_mac(ppe_dev, addr);
++	rcu_read_unlock();
++}
++
++static const u8 *mt7996_sta_link_addr(struct ieee80211_sta *sta,
++				      unsigned int link_id)
++{
++	struct ieee80211_link_sta *link_sta;
++
++	link_sta = link_sta_dereference_protected(sta, link_id);
++	return link_sta ? link_sta->addr : sta->addr;
++}
++
+ void mt7996_mac_sta_remove_link(struct mt7996_dev *dev,
+ 				struct ieee80211_sta *sta,
+ 				unsigned int link_id, bool flush)
+@@ -1191,6 +1214,10 @@
+ 	if (!msta_link)
+ 		return;
+ 
++	/* Same-BSS reassoc often skips FDB move; flush PPE on STA teardown. */
++	mt7996_ppe_flush_sta_addr(dev,
++				  mt7996_sta_link_addr(sta, link_id));
++
+ 	spin_lock_bh(&dev->mt76.sta_poll_lock);
+ 	if (!list_empty(&msta_link->wcid.poll_list))
+ 		list_del_init(&msta_link->wcid.poll_list);
