@@ -13,27 +13,21 @@ Fix by computing a fallback transport header offset from the IP header
 length when nft_thoff() returns zero.
 
 Signed-off-by: chak-kei.lam <chak-kei.lam@mediatek.com>
-[dpawlik: ported from mtk-openwrt-feeds 25.12 999-ppe-37]
+[dpawlik: ported from mtk-openwrt-feeds 25.12 999-ppe-37;
+ adapted for 6.18.44 on top of 675-09 thoff check.]
 Signed-off-by: Daniel Pawlik <dpawlik@redhat.com>
 ---
- net/netfilter/nft_flow_offload.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ net/netfilter/nft_flow_offload.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
-@@ -519,6 +519,7 @@ static void nft_flow_offload_eval(const
- 	struct nf_flow_route route = {};
- 	enum ip_conntrack_info ctinfo;
- 	struct flow_offload *flow;
-+	unsigned int thoff;
- 	enum ip_conntrack_dir dir;
- 	struct nf_conn *ct;
- 	int ret;
-@@ -537,7 +538,15 @@ static void nft_flow_offload_eval(const
+@@ -72,8 +72,13 @@ static void nft_flow_offload_eval(const
  	switch (ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum) {
  	case IPPROTO_TCP:
--		tcph = skb_header_pointer(pkt->skb, nft_thoff(pkt),
-+		thoff = nft_thoff(pkt);
+ 		thoff = nft_thoff(pkt);
+-		if (thoff == 0)
+-			goto out;
 +		if (!thoff) {
 +			if (pkt->skb->protocol == htons(ETH_P_IP))
 +				thoff = ip_hdrlen(pkt->skb);
@@ -41,7 +35,6 @@ Signed-off-by: Daniel Pawlik <dpawlik@redhat.com>
 +				thoff = sizeof(struct ipv6hdr);
 +		}
 +
-+		tcph = skb_header_pointer(pkt->skb, thoff,
- 					  sizeof(_tcph), &_tcph);
+ 		tcph = skb_header_pointer(pkt->skb, thoff, sizeof(_tcph),
+ 					  &_tcph);
  		if (unlikely(!tcph || tcph->fin || tcph->rst ||
- 			     !nf_conntrack_tcp_established(ct)))
