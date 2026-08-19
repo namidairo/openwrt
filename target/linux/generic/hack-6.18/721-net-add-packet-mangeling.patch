@@ -19,18 +19,18 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -1746,6 +1746,7 @@ enum netdev_priv_flags {
+@@ -1747,6 +1747,7 @@ enum netdev_priv_flags {
  	IFF_L3MDEV_RX_HANDLER		= 1<<29,
  	IFF_NO_ADDRCONF			= BIT_ULL(30),
  	IFF_TX_SKB_NO_LINEAR		= BIT_ULL(31),
 +	IFF_NO_IP_ALIGN			= BIT_ULL(32),
  };
- 
+
  /* Specifies the type of the struct net_device::ml_priv pointer */
-@@ -2247,6 +2248,11 @@ struct net_device {
+@@ -2248,6 +2249,11 @@ struct net_device {
  	const struct tlsdev_ops *tlsdev_ops;
  #endif
- 
+
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
 +	void (*eth_mangle_rx)(struct net_device *dev, struct sk_buff *skb);
 +	struct sk_buff *(*eth_mangle_tx)(struct net_device *dev, struct sk_buff *skb);
@@ -38,11 +38,11 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 +
  	unsigned int		operstate;
  	unsigned char		link_mode;
- 
+
 @@ -2323,6 +2329,10 @@ struct net_device {
  	struct psp_dev __rcu	*psp_dev;
  #endif
- 
+
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
 +	void			*phy_ptr; /* PHY device specific data */
 +#endif
@@ -55,7 +55,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 @@ -3333,6 +3333,10 @@ static inline int pskb_trim(struct sk_bu
  	return (len < skb->len) ? __pskb_trim(skb, len) : 0;
  }
- 
+
 +extern struct sk_buff *__netdev_alloc_skb_ip_align(struct net_device *dev,
 +		unsigned int length, gfp_t gfp);
 +
@@ -65,8 +65,8 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
   *	@skb: buffer to alter
 @@ -3498,16 +3502,6 @@ static inline struct sk_buff *dev_alloc_
  }
- 
- 
+
+
 -static inline struct sk_buff *__netdev_alloc_skb_ip_align(struct net_device *dev,
 -		unsigned int length, gfp_t gfp)
 -{
@@ -83,9 +83,9 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 --- a/net/Kconfig
 +++ b/net/Kconfig
 @@ -26,6 +26,12 @@ menuconfig NET
- 
+
  if NET
- 
+
 +config ETHERNET_PACKET_MANGLE
 +	bool
 +	help
@@ -100,7 +100,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 @@ -3911,6 +3911,11 @@ static int xmit_one(struct sk_buff *skb,
  	if (dev_nit_active_rcu(dev))
  		dev_queue_xmit_nit(skb, dev);
- 
+
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
 +	if (dev->eth_mangle_tx && !(skb = dev->eth_mangle_tx(dev, skb)))
 +		return NETDEV_TX_OK;
@@ -116,13 +116,13 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
  #include <linux/iov_iter.h>
  #include <linux/crc32.h>
 +#include <linux/if.h>
- 
+
  #include <net/protocol.h>
  #include <net/dst.h>
 @@ -254,6 +255,22 @@ void *__napi_alloc_frag_align(unsigned i
  }
  EXPORT_SYMBOL(__napi_alloc_frag_align);
- 
+
 +struct sk_buff *__netdev_alloc_skb_ip_align(struct net_device *dev,
 +		unsigned int length, gfp_t gfp)
 +{
@@ -146,7 +146,7 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 +++ b/net/ethernet/eth.c
 @@ -159,6 +159,12 @@ __be16 eth_type_trans(struct sk_buff *sk
  	const struct ethhdr *eth;
- 
+
  	skb->dev = dev;
 +
 +#ifdef CONFIG_ETHERNET_PACKET_MANGLE
@@ -155,5 +155,5 @@ Signed-off-by: Felix Fietkau <nbd@nbd.name>
 +#endif
 +
  	skb_reset_mac_header(skb);
- 
+
  	eth = eth_skb_pull_mac(skb);

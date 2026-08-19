@@ -35,10 +35,10 @@ Signed-off-by: Paolo Abeni <pabeni@redhat.com>
 
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -21687,6 +21687,13 @@ S:	Maintained
- F:	Documentation/devicetree/bindings/watchdog/realtek,otto-wdt.yaml
- F:	drivers/watchdog/realtek_otto_wdt.c
- 
+@@ -21685,6 +21685,13 @@ S:	Maintained
+ F:	include/sound/rt*.h
+ F:	sound/soc/codecs/rt*
+
 +REALTEK PSE MCU DRIVER
 +M:	Jonas Jelonek <jelonek.jonas@gmail.com>
 +L:	netdev@vger.kernel.org
@@ -52,9 +52,9 @@ Signed-off-by: Paolo Abeni <pabeni@redhat.com>
 --- a/drivers/net/pse-pd/Kconfig
 +++ b/drivers/net/pse-pd/Kconfig
 @@ -13,6 +13,12 @@ menuconfig PSE_CONTROLLER
- 
+
  if PSE_CONTROLLER
- 
+
 +config PSE_REALTEK_MCU
 +	tristate
 +	help
@@ -67,9 +67,9 @@ Signed-off-by: Paolo Abeni <pabeni@redhat.com>
 --- a/drivers/net/pse-pd/Makefile
 +++ b/drivers/net/pse-pd/Makefile
 @@ -3,6 +3,7 @@
- 
+
  obj-$(CONFIG_PSE_CONTROLLER) += pse_core.o
- 
+
 +obj-$(CONFIG_PSE_REALTEK_MCU) += realtek-pse-mcu-core.o
  obj-$(CONFIG_PSE_REGULATOR) += pse_regulator.o
  obj-$(CONFIG_PSE_PD692X0) += pd692x0.o
