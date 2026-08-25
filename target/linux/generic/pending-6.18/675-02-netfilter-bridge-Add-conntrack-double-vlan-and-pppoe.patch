@@ -26,8 +26,10 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
  net/bridge/netfilter/nf_conntrack_bridge.c | 203 ++++++++++++++++++---
  2 files changed, 182 insertions(+), 27 deletions(-)
 
---- a/include/linux/netfilter_bridge.h
-+++ b/include/linux/netfilter_bridge.h
+Index: linux-6.18.45/include/linux/netfilter_bridge.h
+===================================================================
+--- linux-6.18.45.orig/include/linux/netfilter_bridge.h
++++ linux-6.18.45/include/linux/netfilter_bridge.h
 @@ -10,6 +10,12 @@ struct nf_bridge_frag_data {
  	bool    vlan_present;
  	u16     vlan_tci;
@@ -41,8 +43,10 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
  };
  
  #if IS_ENABLED(CONFIG_BRIDGE_NETFILTER)
---- a/net/bridge/netfilter/nf_conntrack_bridge.c
-+++ b/net/bridge/netfilter/nf_conntrack_bridge.c
+Index: linux-6.18.45/net/bridge/netfilter/nf_conntrack_bridge.c
+===================================================================
+--- linux-6.18.45.orig/net/bridge/netfilter/nf_conntrack_bridge.c
++++ linux-6.18.45/net/bridge/netfilter/nf_conntrack_bridge.c
 @@ -16,6 +16,7 @@
  #include <net/netfilter/nf_conntrack_helper.h>
  #include <net/netfilter/nf_conntrack_bridge.h>
@@ -114,7 +118,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
  #else
  	return NF_ACCEPT;
  #endif
-@@ -237,58 +253,139 @@ static int nf_ct_br_ipv6_check(const str
+@@ -237,59 +253,140 @@ static int nf_ct_br_ipv6_check(const str
  	return 0;
  }
  
@@ -201,6 +205,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
 -	switch (skb->protocol) {
 -	case htons(ETH_P_IP):
 -		if (!pskb_may_pull(skb, sizeof(struct iphdr)))
++
 +	proto = skb->protocol;
 +
 +	if (ct && nf_ct_zone_id(nf_ct_zone(ct), CTINFO2DIR(ctinfo)) !=
@@ -254,6 +259,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
 +		ret = nf_ct_br_defrag6(skb, &bridge_state, offset);
  		break;
  	default:
+-		nf_reset_ct(skb);
  		nf_ct_set(skb, NULL, IP_CT_UNTRACKED);
 -		return NF_ACCEPT;
 +		goto do_not_track;
@@ -263,17 +269,17 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
 -		return ret;
 +	if (ret == NF_ACCEPT)
 +		ret = nf_conntrack_in(skb, &bridge_state);
-+
+ 
+-	return nf_conntrack_in(skb, &bridge_state);
 +do_not_track:
 +	if (offset && ret == NF_ACCEPT)
 +		skb_reset_network_header(skb);
- 
--	return nf_conntrack_in(skb, &bridge_state);
++
 +	return ret;
  }
  
  static unsigned int nf_ct_bridge_in(void *priv, struct sk_buff *skb,
-@@ -341,12 +438,22 @@ nf_ct_bridge_refrag(struct sk_buff *skb,
+@@ -342,12 +439,22 @@ nf_ct_bridge_refrag(struct sk_buff *skb,
  				  struct sk_buff *))
  {
  	struct nf_bridge_frag_data data;
@@ -297,7 +303,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
  	case htons(ETH_P_IP):
  		nf_br_ip_fragment(state->net, state->sk, skb, &data, output);
  		break;
-@@ -367,11 +474,49 @@ static int nf_ct_bridge_frag_restore(str
+@@ -368,11 +475,49 @@ static int nf_ct_bridge_frag_restore(str
  {
  	int err;
  
@@ -326,7 +332,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
 +		ph->hdr.sid  = data->pppoe_sid;
 +		ph->hdr.length = htons(skb->len + 2 - PPPOE_SES_HLEN);
 +		ph->proto = data->pppoe_proto;
-+	}
+ 	}
 +
 +	if (data->inner_vlan_present) {
 +		struct vlan_hdr *vhdr;
@@ -342,7 +348,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
 +		vhdr = (struct vlan_hdr *)(skb->data);
 +		vhdr->h_vlan_TCI = data->inner_vlan_tci;
 +		vhdr->h_vlan_encapsulated_proto = data->inner_vlan_proto;
- 	}
++	}
 +
 +	err = skb_cow_head(skb, ETH_HLEN);
 +	if (err)
@@ -351,7 +357,7 @@ Signed-off-by: Eric Woudstra <ericwouds@gmail.com>
  	if (data->vlan_present)
  		__vlan_hwaccel_put_tag(skb, data->vlan_proto, data->vlan_tci);
  	else if (skb_vlan_tag_present(skb))
-@@ -381,6 +526,10 @@ static int nf_ct_bridge_frag_restore(str
+@@ -382,6 +527,10 @@ static int nf_ct_bridge_frag_restore(str
  	skb_reset_mac_header(skb);
  
  	return 0;
